@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background -->
+  <circle cx="100" cy="100" r="95" fill="#f0f0f0" />
+  
+  <!-- Pot -->
+  <path d="M60 150 L60 130 C60 100, 140 100, 140 130 L140 150 Z" fill="#CD7F32" />
+  <path d="M55 150 L145 150 L135 180 L65 180 Z" fill="#A0522D" />
+  
+  <!-- Plant Stem -->
+  <path d="M100 130 L100 70" stroke="#388E3C" stroke-width="4" fill="none" />
+  
+  <!-- Leaves -->
+  <path d="M100 115 C120 105, 130 85, 120 70" stroke="#4CAF50" stroke-width="4" fill="none" />
+  <path d="M100 115 C80 105, 70 85, 80 70" stroke="#4CAF50" stroke-width="4" fill="none" />
+  
+  <path d="M100 100 C115 95, 125 80, 115 65" stroke="#4CAF50" stroke-width="4" fill="none" />
+  <path d="M100 100 C85 95, 75 80, 85 65" stroke="#4CAF50" stroke-width="4" fill="none" />
+  
+  <!-- Leaf detail -->
+  <ellipse cx="120" cy="70" rx="10" ry="5" transform="rotate(-30 120 70)" fill="#81C784" />
+  <ellipse cx="80" cy="70" rx="10" ry="5" transform="rotate(30 80 70)" fill="#81C784" />
+  
+  <ellipse cx="115" cy="65" rx="8" ry="4" transform="rotate(-20 115 65)" fill="#81C784" />
+  <ellipse cx="85" cy="65" rx="8" ry="4" transform="rotate(20 85 65)" fill="#81C784" />
+  
+  <!-- Face -->
+  <circle cx="100" cy="55" r="15" fill="#A5D6A7" />
+  <!-- Eyes -->
+  <circle cx="95" cy="52" r="2" fill="#333" />
+  <circle cx="105" cy="52" r="2" fill="#333" />
+  <!-- Smile -->
+  <path d="M95 60 Q100 65, 105 60" fill="none" stroke="#333" stroke-width="1.5" />
+</svg>
