@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="100" fill="#8DC26F" />
+  
+  <!-- Inner circle -->
+  <circle cx="256" cy="256" r="200" fill="#FFFFFF" opacity="0.9" />
+  
+  <!-- Plant pot -->
+  <path d="M176 320 L336 320 L316 420 L196 420 Z" fill="#F9A825" />
+  <path d="M196 420 L316 420 L306 440 L206 440 Z" fill="#F57F17" />
+  
+  <!-- Plant stem -->
+  <path d="M256 330 C270 290 240 270 256 230 C270 190 240 170 256 130" 
+        stroke="#8DC26F" stroke-width="16" stroke-linecap="round" fill="none" />
+  
+  <!-- Leaves -->
+  <path d="M256 230 C280 220 300 230 310 210 C300 190 280 200 255 190" 
+        fill="#A5D6A7" stroke="#8DC26F" stroke-width="4" />
+  <path d="M256 230 C232 220 212 230 202 210 C212 190 232 200 257 190" 
+        fill="#A5D6A7" stroke="#8DC26F" stroke-width="4" />
+  
+  <path d="M256 270 C280 280 300 270 310 290 C300 310 280 300 255 310" 
+        fill="#A5D6A7" stroke="#8DC26F" stroke-width="4" />
+  <path d="M256 270 C232 280 212 270 202 290 C212 310 232 300 257 310" 
+        fill="#A5D6A7" stroke="#8DC26F" stroke-width="4" />
+  
+  <!-- Plant face -->
+  <circle cx="256" cy="160" r="30" fill="#C5E1A5" />
+  
+  <!-- Eyes -->
+  <ellipse cx="242" cy="155" rx="6" ry="8" fill="#513614" />
+  <ellipse cx="270" cy="155" rx="6" ry="8" fill="#513614" />
+  
+  <!-- Smile -->
+  <path d="M242 173 Q256 183 270 173" fill="none" stroke="#513614" stroke-width="4" stroke-linecap="round" />
+  
+  <!-- Blush -->
+  <circle cx="228" cy="165" r="7" fill="#F8BBD0" opacity="0.7" />
+  <circle cx="284" cy="165" r="7" fill="#F8BBD0" opacity="0.7" />
+  
+  <!-- App name -->
+  <text x="256" y="490" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="48" fill="white">Jalika</text>
+</svg>

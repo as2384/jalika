@@ -9,7 +9,7 @@
         // Current active tab
         currentTab: 'dashboard',
         
-        // Mock sensor data (will be replaced with real API calls)
+        // Sensor data (will be updated from Google Sheets)
         sensorData: {
             ph: 6.5,
             tds: 840,
@@ -26,45 +26,8 @@
             temp: { min: 20, max: 25 }
         },
         
-        // Plant data array (will be expanded)
-        plants: [
-            {
-                id: 1,
-                podNumber: 1,
-                name: 'Basil',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg',
-                catchPhrase: "I'm growing strong and healthy!",
-                growthStage: 'Vegetative',
-                healthStatus: 'Good',
-                daysInSystem: 14,
-                issues: []
-            },
-            {
-                id: 2,
-                podNumber: 2,
-                name: 'Lettuce',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg',
-                catchPhrase: "Leaf me alone, I'm growing!",
-                growthStage: 'Vegetative',
-                healthStatus: 'Good',
-                daysInSystem: 10,
-                issues: []
-            },
-            {
-                id: 3,
-                podNumber: 3,
-                name: 'Mint',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg',
-                catchPhrase: "Feeling fresh and minty!",
-                growthStage: 'Vegetative',
-                healthStatus: 'Warning',
-                daysInSystem: 21,
-                issues: ['Yellow leaves - possible nutrient deficiency']
-            }
-        ],
+        // Plant data array (will be populated from Google Sheets)
+        plants: [],
         
         // Priority actions and recommendations
         actions: [
@@ -131,15 +94,68 @@
         // Set up event listeners
         setupEventListeners();
         
-        // Initialize UI components
+        // Listen for data updates from the JalikaData module
+        document.addEventListener('jalika:dataUpdated', handleDataUpdate);
+        
+        // Initial UI setup with loading states
+        showLoadingState();
+        
+        console.log('Jalika app initialized successfully!');
+    }
+    
+    // Handle data updates from the JalikaData module
+    function handleDataUpdate() {
+        console.log('Data updated, refreshing UI...');
+        
+        // Get latest data
+        app.plants = JalikaData.getPlants();
+        const measurements = JalikaData.getMeasurements();
+        
+        // Update sensor data
+        if (measurements && measurements.latest) {
+            app.sensorData = {
+                ph: measurements.latest.ph,
+                tds: measurements.latest.tds,
+                ec: measurements.latest.ec,
+                temp: measurements.latest.temp,
+                lastUpdated: new Date(measurements.latest.timestamp)
+            };
+        }
+        
+        // Update UI components
         updateSensorDisplay();
         renderPlantPods();
         renderActionLists();
-        
-        // Update last updated time
         updateLastUpdatedTime();
         
-        console.log('Jalika app initialized successfully!');
+        // Remove loading state
+        hideLoadingState();
+    }
+    
+    // Show loading state
+    function showLoadingState() {
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'loading-overlay';
+        loadingOverlay.innerHTML = `
+            <div class="loading-spinner">
+                <i class="fas fa-seedling fa-spin"></i>
+            </div>
+            <div class="loading-text">Growing Jalika...</div>
+        `;
+        document.body.appendChild(loadingOverlay);
+    }
+    
+    // Hide loading state
+    function hideLoadingState() {
+        const loadingOverlay = document.querySelector('.loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('fade-out');
+            setTimeout(() => {
+                if (loadingOverlay.parentNode) {
+                    loadingOverlay.parentNode.removeChild(loadingOverlay);
+                }
+            }, 500);
+        }
     }
     
     // Set up event listeners
@@ -291,7 +307,13 @@
     
     // Show plant details in modal
     function showPlantDetails(plant) {
-        elements.modalPlantName.textContent = plant.name;
+        // Display plant name with custom name in parentheses if available
+        if (plant.customName) {
+            elements.modalPlantName.textContent = `${plant.name} (${plant.customName})`;
+        } else {
+            elements.modalPlantName.textContent = plant.name;
+        }
+        
         elements.modalPodNumber.textContent = `Pod #${plant.podNumber}`;
         elements.modalPlantCartoon.src = plant.cartoonImage;
         elements.modalCatchPhrase.textContent = `"${plant.catchPhrase}"`;
@@ -299,17 +321,31 @@
         elements.modalHealthStatus.textContent = plant.healthStatus;
         elements.modalDays.textContent = plant.daysInSystem;
         
+        // Add class based on health status
+        elements.modalHealthStatus.className = 'stat-value';
+        if (plant.healthStatus === 'Warning') {
+            elements.modalHealthStatus.classList.add('warning');
+        } else if (plant.healthStatus === 'Poor') {
+            elements.modalHealthStatus.classList.add('danger');
+        } else if (plant.healthStatus === 'Good') {
+            elements.modalHealthStatus.classList.add('success');
+        }
+        
         // Render issues list
         if (plant.issues && plant.issues.length > 0) {
-            elements.modalIssuesList.innerHTML = plant.issues.map(issue => 
-                `<li>${issue}</li>`
-            ).join('');
+            elements.modalIssuesList.innerHTML = plant.issues
+                .filter(issue => issue) // Filter out empty issues
+                .map(issue => `<li>${issue}</li>`)
+                .join('');
         } else {
             elements.modalIssuesList.innerHTML = '<li class="no-issues">No issues detected</li>';
         }
         
         // Show the modal
         elements.plantDetailModal.style.display = 'flex';
+        
+        // Store current plant ID for edit functionality
+        elements.plantDetailModal.setAttribute('data-current-plant-id', plant.id);
     }
     
     // Handle image upload
@@ -323,37 +359,86 @@
             return;
         }
         
+        // Show processing indicator
+        showProcessingIndicator('Processing your image... Creating kawaii version!');
+        
         // Create a FileReader to read the image
         const reader = new FileReader();
         
         reader.onload = function(e) {
             const imageUrl = e.target.result;
             
-            // Update the current plant's image (this is just for demo)
+            // Get the current plant
             const podId = parseInt(elements.modalPodNumber.textContent.replace('Pod #', ''));
             const plant = app.plants.find(p => p.podNumber === podId);
             
             if (plant) {
-                // Here we would normally send the image to a server for processing
-                // For now, we'll just update the UI directly
-                
-                // Update the cartoon image
-                plant.cartoonImage = imageUrl;
-                elements.modalPlantCartoon.src = imageUrl;
-                
-                // Also update the pod image
+                // Update the original image
                 plant.image = imageUrl;
                 
-                // Refresh the plant pods display to show the new image
-                renderPlantPods();
-                
-                console.log('Image updated for plant:', plant.name);
-                alert('Image updated! In a production app, this would be processed to create a cartoon version.');
+                // Process the image to create a cartoon version
+                ImageProcessor.createThematicCartoonFromImage(imageUrl)
+                    .then(cartoonizedImageUrl => {
+                        // Update the cartoon image
+                        plant.cartoonImage = cartoonizedImageUrl;
+                        elements.modalPlantCartoon.src = cartoonizedImageUrl;
+                        
+                        // Refresh the plant pods display
+                        renderPlantPods();
+                        
+                        // Hide processing indicator
+                        hideProcessingIndicator();
+                        
+                        console.log('Image processed for plant:', plant.name);
+                    })
+                    .catch(error => {
+                        console.error('Error processing image:', error);
+                        
+                        // Fallback to original image if processing fails
+                        plant.cartoonImage = imageUrl;
+                        elements.modalPlantCartoon.src = imageUrl;
+                        
+                        // Hide processing indicator
+                        hideProcessingIndicator();
+                        
+                        // Refresh the plant pods display
+                        renderPlantPods();
+                        
+                        alert('Could not create cartoon version. Using original image instead.');
+                    });
             }
         };
         
         // Read the image file as a data URL
         reader.readAsDataURL(file);
+    }
+    
+    // Show processing indicator
+    function showProcessingIndicator(message) {
+        const processingOverlay = document.createElement('div');
+        processingOverlay.className = 'processing-overlay';
+        processingOverlay.innerHTML = `
+            <div class="processing-content">
+                <div class="processing-spinner">
+                    <i class="fas fa-paint-brush fa-spin"></i>
+                </div>
+                <div class="processing-message">${message}</div>
+            </div>
+        `;
+        document.body.appendChild(processingOverlay);
+    }
+    
+    // Hide processing indicator
+    function hideProcessingIndicator() {
+        const processingOverlay = document.querySelector('.processing-overlay');
+        if (processingOverlay) {
+            processingOverlay.classList.add('fade-out');
+            setTimeout(() => {
+                if (processingOverlay.parentNode) {
+                    processingOverlay.parentNode.removeChild(processingOverlay);
+                }
+            }, 500);
+        }
     }
     
     // Render action and recommendation lists
@@ -406,33 +491,31 @@
         elements.lastUpdatedTime.textContent = timeString;
     }
     
-    // Refresh data (simulate API call)
+    // Refresh data from Google Sheets
     function refreshData() {
         console.log('Refreshing data...');
         
         // Show loading indicator
         elements.refreshButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
         
-        // Simulate API delay
-        setTimeout(() => {
-            // Update with new "data"
-            app.sensorData = {
-                ph: 6.2 + (Math.random() * 0.6 - 0.3), // Random variation
-                tds: 840 + (Math.random() * 100 - 50),
-                ec: 1.2 + (Math.random() * 0.4 - 0.2),
-                temp: 22.5 + (Math.random() * 2 - 1),
-                lastUpdated: new Date()
-            };
-            
-            // Update UI
-            updateSensorDisplay();
-            updateLastUpdatedTime();
-            
-            // Reset button
-            elements.refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
-            
-            console.log('Data refreshed!');
-        }, 1000);
+        // Call the JalikaData refresh function
+        JalikaData.refreshData()
+            .then(result => {
+                if (!result.success) {
+                    console.error('Failed to refresh data', result.error);
+                    alert('Could not update data. Please try again later.');
+                }
+                
+                // Reset button regardless of success/failure
+                elements.refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            })
+            .catch(error => {
+                console.error('Error refreshing data', error);
+                alert('Could not update data. Please try again later.');
+                
+                // Reset button
+                elements.refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            });
     }
     
     // Initialize the app when the DOM is fully loaded

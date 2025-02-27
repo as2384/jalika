@@ -1,33 +1,54 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
   <!-- Background -->
-  <circle cx="100" cy="100" r="95" fill="#f0f0f0" />
+  <circle cx="100" cy="100" r="95" fill="#f5f5f5" />
   
-  <!-- Pot -->
-  <path d="M60 150 L60 130 C60 100, 140 100, 140 130 L140 150 Z" fill="#CD7F32" />
-  <path d="M55 150 L145 150 L135 180 L65 180 Z" fill="#A0522D" />
+  <!-- Kawaii Pot -->
+  <path d="M60 150 Q80 140 100 140 Q120 140 140 150 L140 150 Q140 160 140 170 Q120 180 80 180 Q60 180 60 170 Z" fill="#F9A825" />
+  <ellipse cx="100" cy="180" rx="40" ry="10" fill="#F57F17" />
   
-  <!-- Plant Stem -->
-  <path d="M100 130 L100 70" stroke="#388E3C" stroke-width="4" fill="none" />
+  <!-- Cute Face on Pot -->
+  <circle cx="90" cy="160" r="3" fill="#513614" />
+  <circle cx="110" cy="160" r="3" fill="#513614" />
+  <path d="M95 170 Q100 173 105 170" fill="none" stroke="#513614" stroke-width="2" stroke-linecap="round" />
   
-  <!-- Leaves -->
-  <path d="M100 115 C120 105, 130 85, 120 70" stroke="#4CAF50" stroke-width="4" fill="none" />
-  <path d="M100 115 C80 105, 70 85, 80 70" stroke="#4CAF50" stroke-width="4" fill="none" />
+  <!-- Plant Stem with gentle curves -->
+  <path d="M100 140 C105 120 95 110 100 90 C105 70 95 60 100 40" stroke="#8DC26F" stroke-width="5" stroke-linecap="round" fill="none" />
   
-  <path d="M100 100 C115 95, 125 80, 115 65" stroke="#4CAF50" stroke-width="4" fill="none" />
-  <path d="M100 100 C85 95, 75 80, 85 65" stroke="#4CAF50" stroke-width="4" fill="none" />
+  <!-- Kawaii Leaves -->
+  <path d="M100 90 C110 85 120 90 125 80 C120 70 110 75 100 70" fill="#A5D6A7" stroke="#8DC26F" stroke-width="2" />
+  <path d="M100 90 C90 85 80 90 75 80 C80 70 90 75 100 70" fill="#A5D6A7" stroke="#8DC26F" stroke-width="2" />
   
-  <!-- Leaf detail -->
-  <ellipse cx="120" cy="70" rx="10" ry="5" transform="rotate(-30 120 70)" fill="#81C784" />
-  <ellipse cx="80" cy="70" rx="10" ry="5" transform="rotate(30 80 70)" fill="#81C784" />
+  <path d="M100 110 C110 115 120 110 125 120 C120 130 110 125 100 130" fill="#A5D6A7" stroke="#8DC26F" stroke-width="2" />
+  <path d="M100 110 C90 115 80 110 75 120 C80 130 90 125 100 130" fill="#A5D6A7" stroke="#8DC26F" stroke-width="2" />
   
-  <ellipse cx="115" cy="65" rx="8" ry="4" transform="rotate(-20 115 65)" fill="#81C784" />
-  <ellipse cx="85" cy="65" rx="8" ry="4" transform="rotate(20 85 65)" fill="#81C784" />
+  <!-- Cute Plant Face -->
+  <circle cx="100" cy="50" r="15" fill="#C5E1A5" />
   
-  <!-- Face -->
-  <circle cx="100" cy="55" r="15" fill="#A5D6A7" />
-  <!-- Eyes -->
-  <circle cx="95" cy="52" r="2" fill="#333" />
-  <circle cx="105" cy="52" r="2" fill="#333" />
-  <!-- Smile -->
-  <path d="M95 60 Q100 65, 105 60" fill="none" stroke="#333" stroke-width="1.5" />
+  <!-- Kawaii Eyes -->
+  <g transform="translate(100 50)">
+    <!-- Left Eye -->
+    <g transform="translate(-7 -3)">
+      <ellipse cx="0" cy="0" rx="3" ry="4" fill="#513614" />
+      <circle cx="-1" cy="-1" r="1" fill="white" />
+    </g>
+    
+    <!-- Right Eye -->
+    <g transform="translate(7 -3)">
+      <ellipse cx="0" cy="0" rx="3" ry="4" fill="#513614" />
+      <circle cx="-1" cy="-1" r="1" fill="white" />
+    </g>
+    
+    <!-- Blush spots -->
+    <circle cx="-9" cy="3" r="2.5" fill="#F8BBD0" opacity="0.7" />
+    <circle cx="9" cy="3" r="2.5" fill="#F8BBD0" opacity="0.7" />
+    
+    <!-- Kawaii smile -->
+    <path d="M-5 5 Q0 8 5 5" fill="none" stroke="#513614" stroke-width="2" stroke-linecap="round" />
+  </g>
+  
+  <!-- Small decorative elements -->
+  <circle cx="70" cy="100" r="3" fill="#9575CD" opacity="0.7" />
+  <circle cx="130" cy="100" r="3" fill="#9575CD" opacity="0.7" />
+  <circle cx="80" cy="60" r="2" fill="#F9A825" opacity="0.7" />
+  <circle cx="120" cy="60" r="2" fill="#F9A825" opacity="0.7" />
 </svg>
