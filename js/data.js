@@ -6,10 +6,11 @@ const JalikaData = (function() {
     
     // Configuration
     const config = {
-        // You can optionally update this with published CSV URLs if you publish specific sheets
-        // For now, we'll use the mock data to ensure reliability
-        useLocalData: true,
-        refreshInterval: 5 * 60 * 1000 // 5 minutes in milliseconds
+        sheetId: '1SaY9e_X0nbCalykRwgHd2QzNmLrrHxVB-Z-WNBnuYzA',
+        useGoogleSheets: true, // Set to false to always use mock data
+        sheetsApiEnabled: true, // Will be set to false if Google Sheets API fails
+        refreshInterval: 5 * 60 * 1000, // 5 minutes in milliseconds
+        debugMode: true // Enable detailed debug info
     };
     
     // Cache for data
@@ -17,7 +18,9 @@ const JalikaData = (function() {
         plants: [],
         measurements: [],
         lastUpdated: null,
-        catchphrases: {} // Will hold plant catchphrases
+        catchphrases: {}, // Will hold plant catchphrases
+        errorMessage: null, // Will hold any error messages
+        usingMockData: false // Flag to indicate if we're using mock data
     };
     
     // Japanese-inspired cute plant names
@@ -47,9 +50,180 @@ const JalikaData = (function() {
         "Just chilling and growing!"
     ];
     
+    // Create and display warning message
+    function showWarningMessage(message) {
+        // Set error message in cache
+        cache.errorMessage = message;
+        cache.usingMockData = true;
+        
+        // Check if warning element already exists
+        let warningEl = document.getElementById('jalika-warning');
+        
+        if (!warningEl) {
+            // Create warning element
+            warningEl = document.createElement('div');
+            warningEl.id = 'jalika-warning';
+            warningEl.className = 'data-warning';
+            
+            // Style the warning
+            warningEl.style.backgroundColor = '#fff3cd';
+            warningEl.style.color = '#856404';
+            warningEl.style.padding = '10px 15px';
+            warningEl.style.margin = '10px 0';
+            warningEl.style.borderRadius = '4px';
+            warningEl.style.borderLeft = '5px solid #ffeeba';
+            warningEl.style.fontSize = '14px';
+            
+            // Add icon
+            const iconEl = document.createElement('i');
+            iconEl.className = 'fas fa-exclamation-triangle';
+            iconEl.style.marginRight = '8px';
+            warningEl.appendChild(iconEl);
+            
+            // Add text container
+            const textEl = document.createElement('span');
+            warningEl.appendChild(textEl);
+            
+            // Insert after header
+            const header = document.querySelector('.app-header');
+            if (header && header.parentNode) {
+                header.parentNode.insertBefore(warningEl, header.nextSibling);
+            }
+        }
+        
+        // Update warning text
+        const textEl = warningEl.querySelector('span');
+        if (textEl) {
+            textEl.textContent = message;
+        }
+        
+        // Log to console
+        console.warn('[Jalika] ' + message);
+    }
+    
+    // Hide warning message
+    function hideWarningMessage() {
+        const warningEl = document.getElementById('jalika-warning');
+        if (warningEl) {
+            warningEl.style.display = 'none';
+        }
+        cache.errorMessage = null;
+        cache.usingMockData = false;
+    }
+    
+    // Try to fetch data from Google Sheets
+    async function fetchGoogleSheetsData() {
+        if (!config.useGoogleSheets || !config.sheetsApiEnabled) {
+            return null;
+        }
+        
+        try {
+            // Log attempt
+            if (config.debugMode) {
+                console.log('[Jalika] Attempting to fetch data from Google Sheets...');
+            }
+            
+            // First, try to get data using a specific exported CSV format
+            const layoutUrl = `https://docs.google.com/spreadsheets/d/${config.sheetId}/gviz/tq?tqx=out:csv&sheet=GC1`;
+            const measurementsUrl = `https://docs.google.com/spreadsheets/d/${config.sheetId}/gviz/tq?tqx=out:csv&sheet=Measurements`;
+            
+            // Try to fetch the layout data
+            const layoutResponse = await fetch(layoutUrl);
+            
+            if (!layoutResponse.ok) {
+                throw new Error(`Failed to fetch plant data: ${layoutResponse.status} ${layoutResponse.statusText}`);
+            }
+            
+            const layoutData = await layoutResponse.text();
+            const plants = parseCSV(layoutData);
+            
+            // Try to fetch the measurements data
+            const measurementsResponse = await fetch(measurementsUrl);
+            
+            if (!measurementsResponse.ok) {
+                throw new Error(`Failed to fetch measurement data: ${measurementsResponse.status} ${measurementsResponse.statusText}`);
+            }
+            
+            const measurementsData = await measurementsResponse.text();
+            const measurements = parseCSV(measurementsData);
+            
+            // Return the combined data
+            return {
+                plants: processPlantData(plants),
+                measurements: processMeasurementData(measurements)
+            };
+        } catch (error) {
+            // Log detailed error
+            console.error('[Jalika] Google Sheets fetch error:', error);
+            
+            // Show warning message
+            const errorDetails = error.message || 'Unknown error';
+            showWarningMessage(`[WARNING] Using mocked data! Google Sheets integration failed: ${errorDetails}`);
+            
+            // Disable Google Sheets API for future fetches to avoid repeated errors
+            config.sheetsApiEnabled = false;
+            
+            return null;
+        }
+    }
+    
+    // Parse CSV into array of objects
+    function parseCSV(csvText) {
+        try {
+            const lines = csvText.split('\n');
+            if (lines.length < 2) {
+                throw new Error('CSV has insufficient data');
+            }
+            
+            const headers = lines[0].split(',').map(header => header.trim().replace(/["']/g, ''));
+            
+            return lines.slice(1).map(line => {
+                const values = parseCsvLine(line);
+                const entry = {};
+                
+                headers.forEach((header, index) => {
+                    // Handle case where there might be fewer values than headers
+                    if (index < values.length) {
+                        entry[header] = values[index];
+                    }
+                });
+                
+                return entry;
+            });
+        } catch (error) {
+            console.error('[Jalika] CSV parse error:', error);
+            throw new Error('Failed to parse CSV data: ' + error.message);
+        }
+    }
+    
+    // Helper function to parse CSV line respecting quotes
+    function parseCsvLine(line) {
+        const values = [];
+        let currentValue = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"' && (i === 0 || line[i-1] !== '\\')) {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                values.push(currentValue.trim().replace(/^"|"$/g, ''));
+                currentValue = '';
+            } else {
+                currentValue += char;
+            }
+        }
+        
+        // Add the last value
+        values.push(currentValue.trim().replace(/^"|"$/g, ''));
+        
+        return values;
+    }
+    
     // Generate plant data for the app
     function generatePlantData() {
-        console.log('Generating reliable plant data...');
+        console.log('[Jalika] Generating mock plant data...');
         
         return [
             { 
@@ -139,6 +313,27 @@ const JalikaData = (function() {
         ];
     }
     
+    // Process plant data from sheet into app format
+    function processPlantData(rawData) {
+        return rawData.map((row, index) => {
+            // Assign plant data based on your sheet structure
+            return {
+                id: index + 1,
+                podNumber: row.PodNumber || index + 1,
+                name: row.PlantName || 'Unknown Plant',
+                customName: row.CustomName || plantNameGenerator.generate(),
+                type: row.PlantType || 'Unknown',
+                image: 'img/plants/placeholder.svg', // Default image path
+                cartoonImage: 'img/plants/placeholder.svg', // Will be replaced with cartoonized version
+                catchPhrase: row.CatchPhrase || getCatchphraseForPlant(row.PlantName || 'Unknown Plant'),
+                growthStage: row.GrowthStage || 'Vegetative',
+                healthStatus: row.HealthStatus || 'Good',
+                daysInSystem: row.DaysInSystem || Math.floor(Math.random() * 30),
+                issues: row.Issues ? [row.Issues] : []
+            };
+        });
+    }
+    
     // Generate measurement data for the app
     function generateMeasurementData() {
         const now = new Date();
@@ -160,6 +355,32 @@ const JalikaData = (function() {
         return {
             latest: history[history.length - 1],
             history: history
+        };
+    }
+    
+    // Process measurement data from sheet
+    function processMeasurementData(rawData) {
+        // Get only the latest measurements
+        const latestMeasurements = rawData.slice(-20); // Get last 20 entries for graph
+        
+        // The very latest entry for current values
+        const latest = latestMeasurements[latestMeasurements.length - 1] || {};
+        
+        return {
+            latest: {
+                ph: parseFloat(latest.pH) || 6.5,
+                tds: parseFloat(latest.TDS) || 840,
+                ec: parseFloat(latest.EC) || 1.2,
+                temp: parseFloat(latest.Temperature) || 22.5,
+                timestamp: latest.Timestamp || new Date().toISOString()
+            },
+            history: latestMeasurements.map(row => ({
+                timestamp: row.Timestamp,
+                ph: parseFloat(row.pH) || 0,
+                tds: parseFloat(row.TDS) || 0,
+                ec: parseFloat(row.EC) || 0,
+                temp: parseFloat(row.Temperature) || 0
+            }))
         };
     }
     
@@ -208,19 +429,22 @@ const JalikaData = (function() {
             const basePath = getBasePath();
             const catchphrasesPath = `${basePath}data/catchphrases.json`;
             
-            console.log('Attempting to load catchphrases from:', catchphrasesPath);
+            if (config.debugMode) {
+                console.log('[Jalika] Attempting to load catchphrases from:', catchphrasesPath);
+            }
+            
             const response = await fetch(catchphrasesPath);
             
             if (response.ok) {
                 const data = await response.json();
                 cache.catchphrases = data;
-                console.log('Catchphrases loaded successfully');
+                console.log('[Jalika] Catchphrases loaded successfully');
             } else {
-                console.warn('Catchphrases file not found, using defaults');
+                console.warn('[Jalika] Catchphrases file not found, using defaults');
                 setupDefaultCatchphrases();
             }
         } catch (error) {
-            console.warn('Could not load catchphrases file, using defaults:', error);
+            console.warn('[Jalika] Could not load catchphrases file, using defaults:', error);
             setupDefaultCatchphrases();
         }
     }
@@ -250,21 +474,42 @@ const JalikaData = (function() {
     // Refresh all data 
     async function refreshData() {
         try {
-            console.log('Refreshing Jalika data...');
+            console.log('[Jalika] Refreshing data...');
             
-            if (config.useLocalData || !cache.measurements) {
-                // First load or using local data: generate everything
-                cache.plants = generatePlantData();
-                cache.measurements = generateMeasurementData();
+            // Try to get data from Google Sheets first
+            const sheetsData = await fetchGoogleSheetsData();
+            
+            if (sheetsData) {
+                // Google Sheets data retrieved successfully
+                cache.plants = sheetsData.plants;
+                cache.measurements = sheetsData.measurements;
+                cache.usingMockData = false;
+                
+                // Remove any warning messages
+                hideWarningMessage();
             } else {
-                // Just update measurements with some variance
-                cache.measurements = updateMeasurementData(cache.measurements);
+                // Using mock data
+                if (!cache.plants.length || !cache.measurements) {
+                    // First load: generate everything
+                    cache.plants = generatePlantData();
+                    cache.measurements = generateMeasurementData();
+                } else {
+                    // Just update measurements with some variance
+                    cache.measurements = updateMeasurementData(cache.measurements);
+                }
+                
+                // Display warning if not already shown
+                if (!cache.errorMessage) {
+                    showWarningMessage('[WARNING] Using mocked data! Google Sheets integration disabled.');
+                }
+                
+                cache.usingMockData = true;
             }
             
             // Update timestamp
             cache.lastUpdated = new Date();
             
-            console.log('Data refresh complete!');
+            console.log('[Jalika] Data refresh complete!');
             
             // Trigger event to notify app
             const event = new CustomEvent('jalika:dataUpdated');
@@ -274,20 +519,22 @@ const JalikaData = (function() {
                 success: true,
                 plants: cache.plants,
                 measurements: cache.measurements,
-                timestamp: cache.lastUpdated
+                timestamp: cache.lastUpdated,
+                usingMockData: cache.usingMockData
             };
         } catch (error) {
-            console.error('Error refreshing data:', error);
+            console.error('[Jalika] Error refreshing data:', error);
             return {
                 success: false,
-                error: error.message
+                error: error.message,
+                usingMockData: true
             };
         }
     }
     
     // Initialize data
     async function init() {
-        console.log('Initializing Jalika data...');
+        console.log('[Jalika] Initializing data...');
         
         // Load catchphrases first
         await loadCatchphrases();
@@ -298,7 +545,7 @@ const JalikaData = (function() {
         // Set up periodic refresh
         setInterval(refreshData, config.refreshInterval);
         
-        console.log('Jalika data initialized! Plant data ready:', cache.plants.length);
+        console.log('[Jalika] Data initialized! Plant data ready:', cache.plants.length);
     }
     
     // Public API
@@ -312,7 +559,9 @@ const JalikaData = (function() {
         getCatchphraseForPlant,
         getPlantById: (id) => cache.plants.find(plant => 
             plant.id === (typeof id === 'string' ? parseInt(id) : id) || 
-            plant.podNumber === (typeof id === 'string' ? parseInt(id) : id))
+            plant.podNumber === (typeof id === 'string' ? parseInt(id) : id)),
+        isUsingMockData: () => cache.usingMockData,
+        getErrorMessage: () => cache.errorMessage
     };
 })();
 
