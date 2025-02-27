@@ -52,94 +52,108 @@ const JalikaData = (function() {
     
     // Fetch data from Google Sheets
     async function fetchGoogleSheetData(tabId) {
-        // Since we're having issues with direct export, let's generate mock data
-        // based on the plant types that should be in your spreadsheet
-        console.log('Attempting to fetch Google Sheet data, falling back to structured mock data...');
-        
+        // First try to get actual data from Google Sheets
         try {
-            // For a real implementation, we would use:
-            // const url = `${config.corsProxy}https://docs.google.com/spreadsheets/d/${config.sheetId}/export?format=csv&gid=${tabId}`;
-            // const response = await fetch(url);
+            // For published sheets, we need a specific export format
+            const sheetName = tabId === config.layoutTabId ? 'GC1' : 'Measurements';
+            const url = `${config.corsProxy}https://docs.google.com/spreadsheets/d/${config.sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
             
-            // For now, let's create realistic data
-            if (tabId === config.layoutTabId) {
-                // This is the plants/layout tab
-                return [
-                    { 
-                        PodNumber: "1", 
-                        PlantName: "Basil", 
-                        PlantType: "Herb",
-                        GrowthStage: "Vegetative",
-                        HealthStatus: "Good",
-                        DaysInSystem: "14"
-                    },
-                    { 
-                        PodNumber: "2", 
-                        PlantName: "Lettuce", 
-                        PlantType: "Leafy Green",
-                        GrowthStage: "Vegetative",
-                        HealthStatus: "Good",
-                        DaysInSystem: "10"
-                    },
-                    { 
-                        PodNumber: "3", 
-                        PlantName: "Mint", 
-                        PlantType: "Herb",
-                        GrowthStage: "Vegetative",
-                        HealthStatus: "Warning",
-                        DaysInSystem: "21",
-                        Issues: "Yellow leaves - possible nutrient deficiency"
-                    },
-                    { 
-                        PodNumber: "4", 
-                        PlantName: "Strawberry", 
-                        PlantType: "Fruit",
-                        GrowthStage: "Flowering",
-                        HealthStatus: "Good",
-                        DaysInSystem: "30"
-                    },
-                    { 
-                        PodNumber: "5", 
-                        PlantName: "Cilantro", 
-                        PlantType: "Herb",
-                        GrowthStage: "Vegetative",
-                        HealthStatus: "Good",
-                        DaysInSystem: "8"
-                    },
-                    { 
-                        PodNumber: "6", 
-                        PlantName: "Pepper", 
-                        PlantType: "Vegetable",
-                        GrowthStage: "Fruiting",
-                        HealthStatus: "Good",
-                        DaysInSystem: "45"
-                    }
-                ];
+            console.log(`Attempting to fetch from: ${url}`);
+            
+            const response = await fetch(url);
+            if (response.ok) {
+                const csvText = await response.text();
+                console.log('Successfully fetched Google Sheet data');
+                return parseCSV(csvText);
             } else {
-                // This is the measurements tab
-                const now = new Date();
-                const data = [];
-                
-                // Generate 20 days of data
-                for (let i = 19; i >= 0; i--) {
-                    const date = new Date();
-                    date.setDate(date.getDate() - i);
-                    
-                    data.push({
-                        Timestamp: date.toISOString(),
-                        pH: (6.2 + Math.random() * 0.6).toFixed(1),
-                        TDS: Math.round(840 + Math.random() * 100),
-                        EC: (1.2 + Math.random() * 0.4).toFixed(1),
-                        Temperature: (22.5 + Math.random() * 2).toFixed(1)
-                    });
-                }
-                
-                return data;
+                console.warn(`Failed to fetch sheet data: ${response.status}`);
+                // Fall back to mock data
+                return generateMockDataForTab(tabId);
             }
         } catch (error) {
-            console.error('Error fetching Google Sheet data:', error);
-            // Return empty array but don't break the app
-            return [];
+            console.warn('Error fetching Google Sheet data:', error);
+            // Return mock data as fallback
+            return generateMockDataForTab(tabId);
+        }
+    }
+    
+    // Generate appropriate mock data based on the tab
+    function generateMockDataForTab(tabId) {
+        console.log(`Generating mock data for tab ${tabId}...`);
+        
+        if (tabId === config.layoutTabId) {
+            // This is the plants/layout tab
+            return [
+                { 
+                    PodNumber: "1", 
+                    PlantName: "Basil", 
+                    PlantType: "Herb",
+                    GrowthStage: "Vegetative",
+                    HealthStatus: "Good",
+                    DaysInSystem: "14"
+                },
+                { 
+                    PodNumber: "2", 
+                    PlantName: "Lettuce", 
+                    PlantType: "Leafy Green",
+                    GrowthStage: "Vegetative",
+                    HealthStatus: "Good",
+                    DaysInSystem: "10"
+                },
+                { 
+                    PodNumber: "3", 
+                    PlantName: "Mint", 
+                    PlantType: "Herb",
+                    GrowthStage: "Vegetative",
+                    HealthStatus: "Warning",
+                    DaysInSystem: "21",
+                    Issues: "Yellow leaves - possible nutrient deficiency"
+                },
+                { 
+                    PodNumber: "4", 
+                    PlantName: "Strawberry", 
+                    PlantType: "Fruit",
+                    GrowthStage: "Flowering",
+                    HealthStatus: "Good",
+                    DaysInSystem: "30"
+                },
+                { 
+                    PodNumber: "5", 
+                    PlantName: "Cilantro", 
+                    PlantType: "Herb",
+                    GrowthStage: "Vegetative",
+                    HealthStatus: "Good",
+                    DaysInSystem: "8"
+                },
+                { 
+                    PodNumber: "6", 
+                    PlantName: "Pepper", 
+                    PlantType: "Vegetable",
+                    GrowthStage: "Fruiting",
+                    HealthStatus: "Good",
+                    DaysInSystem: "45"
+                }
+            ];
+        } else {
+            // This is the measurements tab
+            const now = new Date();
+            const data = [];
+            
+            // Generate 20 days of data
+            for (let i = 19; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                
+                data.push({
+                    Timestamp: date.toISOString(),
+                    pH: (6.2 + Math.random() * 0.6).toFixed(1),
+                    TDS: Math.round(840 + Math.random() * 100),
+                    EC: (1.2 + Math.random() * 0.4).toFixed(1),
+                    Temperature: (22.5 + Math.random() * 2).toFixed(1)
+                });
+            }
+            
+            return data;
         }
     }
     

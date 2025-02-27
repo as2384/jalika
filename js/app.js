@@ -84,7 +84,8 @@
         priorityActionsList: document.getElementById('priority-actions-list'),
         generalRecommendationsList: document.getElementById('general-recommendations-list'),
         lastUpdatedTime: document.getElementById('last-updated-time'),
-        refreshButton: document.getElementById('refresh-data')
+        refreshButton: document.getElementById('refresh-data'),
+        appVersion: document.getElementById('app-version')
     };
     
     // Initialize the application
@@ -100,7 +101,43 @@
         // Initial UI setup with loading states
         showLoadingState();
         
+        // Set app version
+        updateAppVersion();
+        
         console.log('Jalika app initialized successfully!');
+    }
+    
+    // Update app version display
+    function updateAppVersion() {
+        // Default version
+        let version = '1.0.0';
+        
+        // Get current date for timestamping if no version is available
+        const now = new Date();
+        const dateString = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
+        
+        // Try to fetch version.json which can be updated on deployment
+        fetch('version.json')
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Version file not found');
+                }
+            })
+            .then(data => {
+                if (data && data.version) {
+                    version = data.version;
+                } else if (data && data.commit) {
+                    version = `1.0.0-${data.commit.substring(0, 7)}`;
+                }
+                elements.appVersion.textContent = version;
+            })
+            .catch(error => {
+                console.warn('Could not load version info:', error);
+                // Use date-based version as fallback
+                elements.appVersion.textContent = `${dateString}`;
+            });
     }
     
     // Handle data updates from the JalikaData module

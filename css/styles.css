@@ -581,6 +581,17 @@ button:focus {
     color: var(--text-light);
 }
 
+.footer-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.version-info {
+    font-size: var(--font-size-xs);
+    color: var(--text-light);
+}
+
 .refresh-button {
     background-color: transparent;
     color: var(--primary-color);
