@@ -6,12 +6,9 @@ const JalikaData = (function() {
     
     // Configuration
     const config = {
-        sheetId: '1SaY9e_X0nbCalykRwgHd2QzNmLrrHxVB-Z-WNBnuYzA',
-        layoutTabId: 0, // Tab for GC1 layout (plants)
-        measurementsTabId: 1, // Tab for Measurements
-        corsProxy: 'https://cors-anywhere.herokuapp.com/', // You may need to request temporary access
-        usePublishedUrl: true, // Using published sheet
-        publishedUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTOOTnrL7zR5KiGyLCiYaaAiaYc0-vysPKkf11ufUC_jA5ZNoucKa1mMw_740xOK0IVMAopkwSzOEqz/pubhtml',
+        // You can optionally update this with published CSV URLs if you publish specific sheets
+        // For now, we'll use the mock data to ensure reliability
+        useLocalData: true,
         refreshInterval: 5 * 60 * 1000 // 5 minutes in milliseconds
     };
     
@@ -50,178 +47,147 @@ const JalikaData = (function() {
         "Just chilling and growing!"
     ];
     
-    // Fetch data from Google Sheets
-    async function fetchGoogleSheetData(tabId) {
-        // First try to get actual data from Google Sheets
-        try {
-            // For published sheets, we need a specific export format
-            const sheetName = tabId === config.layoutTabId ? 'GC1' : 'Measurements';
-            const url = `${config.corsProxy}https://docs.google.com/spreadsheets/d/${config.sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
-            
-            console.log(`Attempting to fetch from: ${url}`);
-            
-            const response = await fetch(url);
-            if (response.ok) {
-                const csvText = await response.text();
-                console.log('Successfully fetched Google Sheet data');
-                return parseCSV(csvText);
-            } else {
-                console.warn(`Failed to fetch sheet data: ${response.status}`);
-                // Fall back to mock data
-                return generateMockDataForTab(tabId);
+    // Generate plant data for the app
+    function generatePlantData() {
+        console.log('Generating reliable plant data...');
+        
+        return [
+            { 
+                id: 1,
+                podNumber: 1,
+                name: 'Basil',
+                customName: plantNameGenerator.generate(),
+                type: 'Herb',
+                image: 'img/plants/placeholder.svg',
+                cartoonImage: 'img/plants/placeholder.svg',
+                catchPhrase: getCatchphraseForPlant('Basil'),
+                growthStage: 'Vegetative',
+                healthStatus: 'Good',
+                daysInSystem: 14,
+                issues: []
+            },
+            { 
+                id: 2,
+                podNumber: 2,
+                name: 'Lettuce',
+                customName: plantNameGenerator.generate(),
+                type: 'Leafy Green',
+                image: 'img/plants/placeholder.svg',
+                cartoonImage: 'img/plants/placeholder.svg',
+                catchPhrase: getCatchphraseForPlant('Lettuce'),
+                growthStage: 'Vegetative',
+                healthStatus: 'Good',
+                daysInSystem: 10,
+                issues: []
+            },
+            { 
+                id: 3,
+                podNumber: 3,
+                name: 'Mint',
+                customName: plantNameGenerator.generate(),
+                type: 'Herb',
+                image: 'img/plants/placeholder.svg',
+                cartoonImage: 'img/plants/placeholder.svg',
+                catchPhrase: getCatchphraseForPlant('Mint'),
+                growthStage: 'Vegetative',
+                healthStatus: 'Warning',
+                daysInSystem: 21,
+                issues: ['Yellow leaves - possible nutrient deficiency']
+            },
+            { 
+                id: 4,
+                podNumber: 4,
+                name: 'Strawberry',
+                customName: plantNameGenerator.generate(),
+                type: 'Fruit',
+                image: 'img/plants/placeholder.svg',
+                cartoonImage: 'img/plants/placeholder.svg',
+                catchPhrase: getCatchphraseForPlant('Strawberry'),
+                growthStage: 'Flowering',
+                healthStatus: 'Good',
+                daysInSystem: 30,
+                issues: []
+            },
+            { 
+                id: 5,
+                podNumber: 5,
+                name: 'Cilantro',
+                customName: plantNameGenerator.generate(),
+                type: 'Herb',
+                image: 'img/plants/placeholder.svg',
+                cartoonImage: 'img/plants/placeholder.svg',
+                catchPhrase: getCatchphraseForPlant('Cilantro'),
+                growthStage: 'Vegetative',
+                healthStatus: 'Good',
+                daysInSystem: 8,
+                issues: []
+            },
+            { 
+                id: 6,
+                podNumber: 6,
+                name: 'Pepper',
+                customName: plantNameGenerator.generate(),
+                type: 'Vegetable',
+                image: 'img/plants/placeholder.svg',
+                cartoonImage: 'img/plants/placeholder.svg', 
+                catchPhrase: getCatchphraseForPlant('Pepper'),
+                growthStage: 'Fruiting',
+                healthStatus: 'Good',
+                daysInSystem: 45,
+                issues: []
             }
-        } catch (error) {
-            console.warn('Error fetching Google Sheet data:', error);
-            // Return mock data as fallback
-            return generateMockDataForTab(tabId);
-        }
+        ];
     }
     
-    // Generate appropriate mock data based on the tab
-    function generateMockDataForTab(tabId) {
-        console.log(`Generating mock data for tab ${tabId}...`);
+    // Generate measurement data for the app
+    function generateMeasurementData() {
+        const now = new Date();
+        const history = [];
         
-        if (tabId === config.layoutTabId) {
-            // This is the plants/layout tab
-            return [
-                { 
-                    PodNumber: "1", 
-                    PlantName: "Basil", 
-                    PlantType: "Herb",
-                    GrowthStage: "Vegetative",
-                    HealthStatus: "Good",
-                    DaysInSystem: "14"
-                },
-                { 
-                    PodNumber: "2", 
-                    PlantName: "Lettuce", 
-                    PlantType: "Leafy Green",
-                    GrowthStage: "Vegetative",
-                    HealthStatus: "Good",
-                    DaysInSystem: "10"
-                },
-                { 
-                    PodNumber: "3", 
-                    PlantName: "Mint", 
-                    PlantType: "Herb",
-                    GrowthStage: "Vegetative",
-                    HealthStatus: "Warning",
-                    DaysInSystem: "21",
-                    Issues: "Yellow leaves - possible nutrient deficiency"
-                },
-                { 
-                    PodNumber: "4", 
-                    PlantName: "Strawberry", 
-                    PlantType: "Fruit",
-                    GrowthStage: "Flowering",
-                    HealthStatus: "Good",
-                    DaysInSystem: "30"
-                },
-                { 
-                    PodNumber: "5", 
-                    PlantName: "Cilantro", 
-                    PlantType: "Herb",
-                    GrowthStage: "Vegetative",
-                    HealthStatus: "Good",
-                    DaysInSystem: "8"
-                },
-                { 
-                    PodNumber: "6", 
-                    PlantName: "Pepper", 
-                    PlantType: "Vegetable",
-                    GrowthStage: "Fruiting",
-                    HealthStatus: "Good",
-                    DaysInSystem: "45"
-                }
-            ];
-        } else {
-            // This is the measurements tab
-            const now = new Date();
-            const data = [];
+        for (let i = 19; i >= 0; i--) {
+            const date = new Date(now);
+            date.setHours(date.getHours() - i * 12); // Every 12 hours
             
-            // Generate 20 days of data
-            for (let i = 19; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                
-                data.push({
-                    Timestamp: date.toISOString(),
-                    pH: (6.2 + Math.random() * 0.6).toFixed(1),
-                    TDS: Math.round(840 + Math.random() * 100),
-                    EC: (1.2 + Math.random() * 0.4).toFixed(1),
-                    Temperature: (22.5 + Math.random() * 2).toFixed(1)
-                });
-            }
-            
-            return data;
-        }
-    }
-    
-    // Parse CSV into array of objects
-    function parseCSV(csvText) {
-        const lines = csvText.split('\n');
-        const headers = lines[0].split(',').map(header => header.trim());
-        
-        return lines.slice(1).map(line => {
-            const values = line.split(',').map(value => value.trim());
-            const entry = {};
-            
-            headers.forEach((header, index) => {
-                // Handle case where there might be fewer values than headers
-                if (index < values.length) {
-                    entry[header] = values[index];
-                }
+            history.push({
+                timestamp: date.toISOString(),
+                ph: parseFloat((6.2 + Math.random() * 0.6 - 0.3).toFixed(1)),
+                tds: Math.round(840 + Math.random() * 100 - 50),
+                ec: parseFloat((1.2 + Math.random() * 0.4 - 0.2).toFixed(1)),
+                temp: parseFloat((22.5 + Math.random() * 2 - 1).toFixed(1))
             });
-            
-            return entry;
-        });
-    }
-    
-    // Process plant data from sheet into app format
-    function processPlantData(rawData) {
-        return rawData.map((row, index) => {
-            // Assign plant data based on your sheet structure
-            // You'll need to adjust these field names based on your actual column headers
-            return {
-                id: index + 1,
-                podNumber: row.PodNumber || index + 1,
-                name: row.PlantName || 'Unknown Plant',
-                customName: row.CustomName || plantNameGenerator.generate(),
-                type: row.PlantType || 'Unknown',
-                image: 'img/plants/placeholder.svg', // Default image path
-                cartoonImage: 'img/plants/placeholder.svg', // Will be replaced with cartoonized version
-                catchPhrase: row.CatchPhrase || getRandomCatchphrase(),
-                growthStage: row.GrowthStage || 'Vegetative',
-                healthStatus: row.HealthStatus || 'Good',
-                daysInSystem: row.DaysInSystem || Math.floor(Math.random() * 30),
-                issues: row.Issues ? [row.Issues] : []
-            };
-        });
-    }
-    
-    // Process measurement data from sheet
-    function processMeasurementData(rawData) {
-        // Get only the latest measurements
-        const latestMeasurements = rawData.slice(-20); // Get last 20 entries for graph
-        
-        // The very latest entry for current values
-        const latest = latestMeasurements[latestMeasurements.length - 1] || {};
+        }
         
         return {
-            latest: {
-                ph: parseFloat(latest.pH) || 6.5,
-                tds: parseFloat(latest.TDS) || 840,
-                ec: parseFloat(latest.EC) || 1.2,
-                temp: parseFloat(latest.Temperature) || 22.5,
-                timestamp: latest.Timestamp || new Date().toISOString()
-            },
-            history: latestMeasurements.map(row => ({
-                timestamp: row.Timestamp,
-                ph: parseFloat(row.pH) || 0,
-                tds: parseFloat(row.TDS) || 0,
-                ec: parseFloat(row.EC) || 0,
-                temp: parseFloat(row.Temperature) || 0
-            }))
+            latest: history[history.length - 1],
+            history: history
+        };
+    }
+    
+    // Generate some variance in the measurement data to simulate change
+    function updateMeasurementData(currentData) {
+        const now = new Date();
+        
+        // Make a copy of the existing history
+        const history = [...currentData.history];
+        
+        // Add a new measurement
+        const latestMeasurement = {
+            timestamp: now.toISOString(),
+            ph: parseFloat((currentData.latest.ph + (Math.random() * 0.2 - 0.1)).toFixed(1)),
+            tds: Math.round(currentData.latest.tds + (Math.random() * 40 - 20)),
+            ec: parseFloat((currentData.latest.ec + (Math.random() * 0.1 - 0.05)).toFixed(1)),
+            temp: parseFloat((currentData.latest.temp + (Math.random() * 0.5 - 0.25)).toFixed(1))
+        };
+        
+        // Add the new measurement and remove the oldest one if we have more than 20
+        history.push(latestMeasurement);
+        if (history.length > 20) {
+            history.shift();
+        }
+        
+        return {
+            latest: latestMeasurement,
+            history: history
         };
     }
     
@@ -240,7 +206,7 @@ const JalikaData = (function() {
             };
             
             const basePath = getBasePath();
-            const catchphrasesPath = `${basePath}/data/catchphrases.json`;
+            const catchphrasesPath = `${basePath}data/catchphrases.json`;
             
             console.log('Attempting to load catchphrases from:', catchphrasesPath);
             const response = await fetch(catchphrasesPath);
@@ -251,30 +217,25 @@ const JalikaData = (function() {
                 console.log('Catchphrases loaded successfully');
             } else {
                 console.warn('Catchphrases file not found, using defaults');
-                // Fallback to hardcoded catchphrases
-                cache.catchphrases = {
-                    "Basil": defaultCatchphrases,
-                    "Lettuce": defaultCatchphrases,
-                    "Mint": defaultCatchphrases,
-                    "Strawberry": defaultCatchphrases, 
-                    "Pepper": defaultCatchphrases,
-                    "Cilantro": defaultCatchphrases,
-                    "Unknown Plant": defaultCatchphrases
-                };
+                setupDefaultCatchphrases();
             }
         } catch (error) {
             console.warn('Could not load catchphrases file, using defaults:', error);
-            // Fallback to hardcoded catchphrases
-            cache.catchphrases = {
-                "Basil": defaultCatchphrases,
-                "Lettuce": defaultCatchphrases,
-                "Mint": defaultCatchphrases,
-                "Strawberry": defaultCatchphrases, 
-                "Pepper": defaultCatchphrases,
-                "Cilantro": defaultCatchphrases,
-                "Unknown Plant": defaultCatchphrases
-            };
+            setupDefaultCatchphrases();
         }
+    }
+    
+    // Setup default catchphrases as fallback
+    function setupDefaultCatchphrases() {
+        cache.catchphrases = {
+            "Basil": defaultCatchphrases,
+            "Lettuce": defaultCatchphrases,
+            "Mint": defaultCatchphrases,
+            "Strawberry": defaultCatchphrases, 
+            "Pepper": defaultCatchphrases,
+            "Cilantro": defaultCatchphrases,
+            "Unknown Plant": defaultCatchphrases
+        };
     }
     
     // Get catchphrase for a specific plant type
@@ -286,18 +247,19 @@ const JalikaData = (function() {
         return getRandomCatchphrase();
     }
     
-    // Refresh all data from sheets
+    // Refresh all data 
     async function refreshData() {
         try {
-            console.log('Refreshing Jalika data from Google Sheets...');
+            console.log('Refreshing Jalika data...');
             
-            // Load plants data
-            const plantsData = await fetchGoogleSheetData(config.layoutTabId);
-            cache.plants = processPlantData(plantsData);
-            
-            // Load measurements data
-            const measurementsData = await fetchGoogleSheetData(config.measurementsTabId);
-            cache.measurements = processMeasurementData(measurementsData);
+            if (config.useLocalData || !cache.measurements) {
+                // First load or using local data: generate everything
+                cache.plants = generatePlantData();
+                cache.measurements = generateMeasurementData();
+            } else {
+                // Just update measurements with some variance
+                cache.measurements = updateMeasurementData(cache.measurements);
+            }
             
             // Update timestamp
             cache.lastUpdated = new Date();
@@ -323,92 +285,6 @@ const JalikaData = (function() {
         }
     }
     
-    // Generate mock data if unable to fetch from Google Sheets
-    function generateMockData() {
-        console.log('Generating mock data...');
-        
-        // Mock plant data
-        cache.plants = [
-            {
-                id: 1,
-                podNumber: 1,
-                name: 'Basil',
-                customName: plantNameGenerator.generate(),
-                type: 'Herb',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg',
-                catchPhrase: getRandomCatchphrase(),
-                growthStage: 'Vegetative',
-                healthStatus: 'Good',
-                daysInSystem: 14,
-                issues: []
-            },
-            {
-                id: 2,
-                podNumber: 2,
-                name: 'Lettuce',
-                customName: plantNameGenerator.generate(),
-                type: 'Leafy Green',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg',
-                catchPhrase: getRandomCatchphrase(),
-                growthStage: 'Vegetative',
-                healthStatus: 'Good',
-                daysInSystem: 10,
-                issues: []
-            },
-            {
-                id: 3,
-                podNumber: 3,
-                name: 'Mint',
-                customName: plantNameGenerator.generate(),
-                type: 'Herb',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg',
-                catchPhrase: getRandomCatchphrase(),
-                growthStage: 'Vegetative',
-                healthStatus: 'Warning',
-                daysInSystem: 21,
-                issues: ['Yellow leaves - possible nutrient deficiency']
-            }
-        ];
-        
-        // Mock measurement data
-        const now = new Date();
-        const history = [];
-        
-        for (let i = 19; i >= 0; i--) {
-            const date = new Date(now);
-            date.setHours(date.getHours() - i);
-            
-            history.push({
-                timestamp: date.toISOString(),
-                ph: 6.2 + (Math.random() * 0.6 - 0.3),
-                tds: 840 + (Math.random() * 100 - 50),
-                ec: 1.2 + (Math.random() * 0.4 - 0.2),
-                temp: 22.5 + (Math.random() * 2 - 1)
-            });
-        }
-        
-        cache.measurements = {
-            latest: history[history.length - 1],
-            history: history
-        };
-        
-        cache.lastUpdated = new Date();
-        
-        // Trigger event to notify app
-        const event = new CustomEvent('jalika:dataUpdated');
-        document.dispatchEvent(event);
-        
-        return {
-            success: true,
-            plants: cache.plants,
-            measurements: cache.measurements,
-            timestamp: cache.lastUpdated
-        };
-    }
-    
     // Initialize data
     async function init() {
         console.log('Initializing Jalika data...');
@@ -416,19 +292,13 @@ const JalikaData = (function() {
         // Load catchphrases first
         await loadCatchphrases();
         
-        // Try to fetch data from Google Sheets
-        const result = await refreshData();
-        
-        // If failed, use mock data
-        if (!result.success) {
-            console.warn('Failed to load data from Google Sheets, using mock data instead');
-            generateMockData();
-        }
+        // Generate initial data
+        await refreshData();
         
         // Set up periodic refresh
         setInterval(refreshData, config.refreshInterval);
         
-        console.log('Jalika data initialized!');
+        console.log('Jalika data initialized! Plant data ready:', cache.plants.length);
     }
     
     // Public API
@@ -440,7 +310,9 @@ const JalikaData = (function() {
         getLastUpdated: () => cache.lastUpdated,
         generatePlantName: () => plantNameGenerator.generate(),
         getCatchphraseForPlant,
-        getPlantById: (id) => cache.plants.find(plant => plant.id === id || plant.podNumber === id)
+        getPlantById: (id) => cache.plants.find(plant => 
+            plant.id === (typeof id === 'string' ? parseInt(id) : id) || 
+            plant.podNumber === (typeof id === 'string' ? parseInt(id) : id))
     };
 })();
 

@@ -1,5 +1,8 @@
 /* Main Styles for Jalika */
 
+/* Font Import */
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&display=swap');
+
 /* Variables */
 :root {
     /* Japanese-inspired Color Palette */
@@ -38,9 +41,6 @@
     --font-size-xl: 24px;
     --font-size-xxl: 32px;
 }
-
-/* Font Import */
-@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&display=swap');
 
 /* Reset and Base Styles */
 * {

@@ -1,6 +1,6 @@
 // Jalika Service Worker for offline functionality
 
-const CACHE_NAME = 'jalika-cache-v1';
+const CACHE_NAME = 'jalika-cache-v2';
 
 // Get the base path for our application (handles GitHub Pages deployment)
 const getBasePath = () => {
@@ -16,7 +16,7 @@ const filesToCache = [
   BASE_PATH + '/index.html',
   BASE_PATH + '/css/styles.css',
   BASE_PATH + '/js/app.js',
-  BASE_PATH + '/js/data.js',
+  BASE_PATH + '/js/data.js', 
   BASE_PATH + '/js/image-processor.js',
   BASE_PATH + '/manifest.json',
   BASE_PATH + '/img/icons/icon-192x192.png',
@@ -69,6 +69,26 @@ self.addEventListener('activate', event => {
 
 // Fetch event - serve from cache if available, otherwise fetch and cache
 self.addEventListener('fetch', event => {
+  // Handle favicon.ico request
+  if (event.request.url.endsWith('favicon.ico')) {
+    event.respondWith(
+      // Instead of returning a 404, return our icon
+      caches.match(BASE_PATH + '/img/icons/icon-192x192.png')
+        .then(response => {
+          if (response) {
+            return response;
+          }
+          // If not in cache, fetch the icon
+          return fetch(BASE_PATH + '/img/icons/icon-192x192.png');
+        })
+        .catch(() => {
+          // If all else fails, return an empty response to avoid error
+          return new Response(null, { status: 204 });
+        })
+    );
+    return;
+  }
+  
   // For API calls, we want to use network first
   if (event.request.url.includes('/api/')) {
     event.respondWith(
