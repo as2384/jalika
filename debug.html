@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jalika Debug Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1, h2 {
+            color: #4CAF50;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        .file-content {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log {
+            background-color: #efefef;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #F44336;
+        }
+        .warning {
+            color: #FF9800;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .timestamp {
+            color: #777;
+            font-size: 0.8em;
+        }
+        #clearCacheBtn {
+            background-color: #F44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Jalika Debug Tool</h1>
+        <p>This tool helps diagnose issues with your Jalika app deployment.</p>
+        
+        <div class="section">
+            <h2>GitHub Pages Information</h2>
+            <div>
+                <p>Current URL: <span id="currentUrl"></span></p>
+                <p>Base Path: <span id="basePath"></span></p>
+                <p>Page generated at: <span id="generatedTime"></span></p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>File System Check</h2>
+            <button id="checkFilesBtn">Check Critical Files</button>
+            <div id="fileCheckResults"></div>
+        </div>
+
+        <div class="section">
+            <h2>JavaScript Console</h2>
+            <button id="runDiagnosticsBtn">Run JavaScript Diagnostics</button>
+            <div id="jsLog" class="log"></div>
+        </div>
+
+        <div class="section">
+            <h2>Cache Management</h2>
+            <button id="clearCacheBtn">Clear Browser Cache for This Site</button>
+            <div class="warning">Note: This will attempt to clear your browser's cache for this site only.</div>
+        </div>
+
+        <div class="section">
+            <h2>File Content Check</h2>
+            <p>Check the content of specific files:</p>
+            <div>
+                <select id="fileSelector">
+                    <option value="index.html">index.html</option>
+                    <option value="css/styles.css">styles.css</option>
+                    <option value="js/app.js">app.js</option>
+                    <option value="js/data.js">data.js</option>
+                    <option value="js/image-processor.js">image-processor.js</option>
+                    <option value="data/catchphrases.json">catchphrases.json</option>
+                    <option value="version.json">version.json</option>
+                </select>
+                <button id="viewFileBtn">View File Content</button>
+            </div>
+            <div id="fileContent" class="file-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // Update page info
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('generatedTime').textContent = new Date().toLocaleString();
+        
+        // Get base path
+        const pathname = window.location.pathname;
+        const basePath = pathname.substring(0, pathname.lastIndexOf('/') + 1);
+        document.getElementById('basePath').textContent = basePath;
+
+        // Log function
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('jsLog');
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            
+            const timestamp = document.createElement('span');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString() + ' ';
+            
+            logEntry.appendChild(timestamp);
+            logEntry.appendChild(document.createTextNode(message));
+            
+            logElement.appendChild(logEntry);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        // Check files function
+        async function checkFiles() {
+            const fileCheckResults = document.getElementById('fileCheckResults');
+            fileCheckResults.innerHTML = '<p>Checking files...</p>';
+
+            const filesToCheck = [
+                'index.html',
+                'css/styles.css',
+                'js/app.js',
+                'js/data.js', 
+                'js/image-processor.js',
+                'img/plants/placeholder.svg',
+                'data/catchphrases.json',
+                'version.json',
+                'img/icons/icon-192x192.png'
+            ];
+
+            const table = document.createElement('table');
+            const headerRow = document.createElement('tr');
+            ['File', 'Status', 'Last Modified', 'Size'].forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            for (const file of filesToCheck) {
+                const row = document.createElement('tr');
+                
+                // File name cell
+                const fileCell = document.createElement('td');
+                fileCell.textContent = file;
+                row.appendChild(fileCell);
+
+                try {
+                    // Construct file path
+                    const filePath = basePath + file;
+                    
+                    // Fetch the file
+                    const response = await fetch(filePath, {
+                        method: 'HEAD',
+                        cache: 'no-store'
+                    });
+
+                    // Status cell
+                    const statusCell = document.createElement('td');
+                    if (response.ok) {
+                        statusCell.textContent = '✅ ' + response.status;
+                        statusCell.className = 'success';
+                    } else {
+                        statusCell.textContent = '❌ ' + response.status + ' ' + response.statusText;
+                        statusCell.className = 'error';
+                    }
+                    row.appendChild(statusCell);
+
+                    // Last modified cell
+                    const modifiedCell = document.createElement('td');
+                    const lastModified = response.headers.get('last-modified');
+                    modifiedCell.textContent = lastModified ? new Date(lastModified).toLocaleString() : 'Unknown';
+                    row.appendChild(modifiedCell);
+
+                    // Size cell
+                    const sizeCell = document.createElement('td');
+                    const contentLength = response.headers.get('content-length');
+                    sizeCell.textContent = contentLength ? Math.round(contentLength / 1024 * 100) / 100 + ' KB' : 'Unknown';
+                    row.appendChild(sizeCell);
+
+                } catch (error) {
+                    // Error case
+                    const errorCell = document.createElement('td');
+                    errorCell.textContent = '❌ Error: ' + error.message;
+                    errorCell.className = 'error';
+                    errorCell.colSpan = 3;
+                    row.appendChild(errorCell);
+                }
+
+                table.appendChild(row);
+            }
+
+            fileCheckResults.innerHTML = '';
+            fileCheckResults.appendChild(table);
+        }
+
+        // Run diagnostics function
+        function runDiagnostics() {
+            log('Starting diagnostics...', 'info');
+            
+            // Check JavaScript environment
+            log('User Agent: ' + navigator.userAgent, 'info');
+            log('Browser cache enabled: ' + (navigator.serviceWorker ? 'Yes' : 'No/Unknown'), 'info');
+            
+            // Check service worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    if (registrations.length === 0) {
+                        log('No service workers registered', 'warning');
+                    } else {
+                        log(`${registrations.length} service worker(s) registered`, 'success');
+                        registrations.forEach(registration => {
+                            log(`Service worker scope: ${registration.scope}`, 'info');
+                        });
+                    }
+                }).catch(error => {
+                    log('Error checking service workers: ' + error.message, 'error');
+                });
+            } else {
+                log('Service workers not supported in this browser', 'warning');
+            }
+            
+            // Check localStorage
+            try {
+                const testKey = 'jalika_debug_test';
+                localStorage.setItem(testKey, 'test');
+                const testValue = localStorage.getItem(testKey);
+                localStorage.removeItem(testKey);
+                
+                if (testValue === 'test') {
+                    log('localStorage is working properly', 'success');
+                } else {
+                    log('localStorage test failed', 'error');
+                }
+            } catch (error) {
+                log('localStorage error: ' + error.message, 'error');
+            }
+            
+            // Check network connectivity
+            fetch('https://httpbin.org/get')
+                .then(response => {
+                    if (response.ok) {
+                        log('Internet connectivity: OK', 'success');
+                    } else {
+                        log('Internet connectivity issues: ' + response.status, 'warning');
+                    }
+                })
+                .catch(error => {
+                    log('Network error: ' + error.message, 'error');
+                });
+            
+            log('Diagnostics complete', 'info');
+        }
+
+        // View file content
+        async function viewFileContent() {
+            const fileSelector = document.getElementById('fileSelector');
+            const selectedFile = fileSelector.value;
+            const contentDiv = document.getElementById('fileContent');
+            
+            contentDiv.textContent = 'Loading...';
+            
+            try {
+                const filePath = basePath + selectedFile;
+                const response = await fetch(filePath, { cache: 'no-store' });
+                
+                if (response.ok) {
+                    const content = await response.text();
+                    contentDiv.textContent = content;
+                } else {
+                    contentDiv.textContent = `Error loading file: ${response.status} ${response.statusText}`;
+                }
+            } catch (error) {
+                contentDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        // Clear cache for this site
+        function clearSiteCache() {
+            if (confirm('Are you sure you want to clear the cache for this site?')) {
+                log('Attempting to clear cache...', 'info');
+                
+                // Clear application cache (deprecated but might help with older sites)
+                if (window.applicationCache) {
+                    try {
+                        window.applicationCache.update();
+                        log('Application cache updated', 'success');
+                    } catch (e) {
+                        log('Application cache error: ' + e.message, 'error');
+                    }
+                }
+                
+                // Clear service worker caches
+                if ('caches' in window) {
+                    caches.keys().then(cacheNames => {
+                        return Promise.all(
+                            cacheNames.map(cacheName => {
+                                log(`Clearing cache: ${cacheName}`, 'info');
+                                return caches.delete(cacheName);
+                            })
+                        );
+                    }).then(() => {
+                        log('Service worker caches cleared', 'success');
+                    }).catch(error => {
+                        log('Cache clearing error: ' + error.message, 'error');
+                    });
+                }
+                
+                // Unregister service workers
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        for (let registration of registrations) {
+                            registration.unregister();
+                            log(`Service worker unregistered: ${registration.scope}`, 'success');
+                        }
+                    });
+                }
+                
+                // Force reload without cache
+                setTimeout(() => {
+                    log('Reloading page without cache in 3 seconds...', 'info');
+                    setTimeout(() => {
+                        window.location.reload(true);
+                    }, 3000);
+                }, 1000);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('checkFilesBtn').addEventListener('click', checkFiles);
+        document.getElementById('runDiagnosticsBtn').addEventListener('click', runDiagnostics);
+        document.getElementById('viewFileBtn').addEventListener('click', viewFileContent);
+        document.getElementById('clearCacheBtn').addEventListener('click', clearSiteCache);
+    </script>
+</body>
+</html>
