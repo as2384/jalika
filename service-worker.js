@@ -2,21 +2,27 @@
 
 const CACHE_NAME = 'jalika-cache-v1';
 
+// Get the base path for our application (handles GitHub Pages deployment)
+const getBasePath = () => {
+  const path = location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
+  return path === '/' ? '' : path; // If root path, use empty string
+};
+
+const BASE_PATH = getBasePath();
+
 // Files to cache for offline use
 const filesToCache = [
-  '/',
-  '/index.html',
-  '/css/styles.css',
-  '/css/components.css',
-  '/js/app.js',
-  '/js/data.js',
-  '/js/plants.js',
-  '/js/recommendations.js',
-  '/js/ui.js',
-  '/manifest.json',
-  '/img/icons/icon-192x192.png',
-  '/img/icons/icon-512x512.png',
-  '/img/plants/placeholder.svg',
+  BASE_PATH + '/',
+  BASE_PATH + '/index.html',
+  BASE_PATH + '/css/styles.css',
+  BASE_PATH + '/js/app.js',
+  BASE_PATH + '/js/data.js',
+  BASE_PATH + '/js/image-processor.js',
+  BASE_PATH + '/manifest.json',
+  BASE_PATH + '/img/icons/icon-192x192.png',
+  BASE_PATH + '/img/icons/icon-512x512.png',
+  BASE_PATH + '/img/plants/placeholder.svg',
+  BASE_PATH + '/data/catchphrases.json',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-solid-900.woff2'
 ];

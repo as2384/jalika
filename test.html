@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jalika Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #4CAF50;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #E8F5E9;
+            color: #2E7D32;
+        }
+        .error {
+            background-color: #FFEBEE;
+            color: #C62828;
+        }
+        .warn {
+            background-color: #FFF8E1;
+            color: #F57F17;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #388E3C;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Jalika Diagnostic Page</h1>
+        
+        <h2>File Access Test</h2>
+        <div id="file-results"></div>
+        
+        <h2>Path Information</h2>
+        <div id="path-info"></div>
+        
+        <button id="run-tests">Run Diagnostics</button>
+    </div>
+
+    <script>
+        document.getElementById('run-tests').addEventListener('click', runTests);
+        
+        // Output to the page
+        function log(message, type = 'info') {
+            const resultDiv = document.getElementById('file-results');
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerText = message;
+            resultDiv.appendChild(statusDiv);
+        }
+        
+        // Test file access
+        async function testFileAccess(path) {
+            try {
+                const response = await fetch(path);
+                if (response.ok) {
+                    log(`✅ Successfully loaded ${path}`, 'success');
+                    return true;
+                } else {
+                    log(`❌ Failed to load ${path}: ${response.status} ${response.statusText}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                log(`❌ Error accessing ${path}: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Show path information
+        function showPathInfo() {
+            const pathDiv = document.getElementById('path-info');
+            
+            const fullPath = window.location.href;
+            const pathname = window.location.pathname;
+            const origin = window.location.origin;
+            
+            const basePath = pathname.substring(0, pathname.lastIndexOf('/') + 1);
+            
+            pathDiv.innerHTML = `
+                <div><strong>Full URL:</strong> ${fullPath}</div>
+                <div><strong>Origin:</strong> ${origin}</div>
+                <div><strong>Path:</strong> ${pathname}</div>
+                <div><strong>Base Path:</strong> ${basePath}</div>
+            `;
+        }
+        
+        // Run all tests
+        async function runTests() {
+            document.getElementById('file-results').innerHTML = '';
+            showPathInfo();
+            
+            // Get the base path
+            const pathname = window.location.pathname;
+            const basePath = pathname.substring(0, pathname.lastIndexOf('/') + 1);
+            
+            // Test critical files
+            await testFileAccess(`${basePath}index.html`);
+            await testFileAccess(`${basePath}css/styles.css`);
+            await testFileAccess(`${basePath}js/app.js`);
+            await testFileAccess(`${basePath}js/data.js`);
+            await testFileAccess(`${basePath}js/image-processor.js`);
+            await testFileAccess(`${basePath}img/plants/placeholder.svg`);
+            await testFileAccess(`${basePath}data/catchphrases.json`);
+            
+            // Test icon files
+            await testFileAccess(`${basePath}img/icons/icon-192x192.png`);
+        }
+    </script>
+</body>
+</html>
