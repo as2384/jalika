@@ -979,3 +979,64 @@ body {
     padding: var(--spacing-xs) var(--spacing-sm);
     font-size: 0.9em;
 }
+
+/* Chart Styles for Jalika */
+
+/* Add this to your styles.css file */
+
+/* Charts Container */
+.charts-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+    width: 100%;
+    margin-top: var(--spacing-md);
+}
+
+/* Chart Wrapper */
+.chart-wrapper {
+    background-color: white;
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-sm);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    height: 250px;
+    position: relative;
+}
+
+.chart-wrapper:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Chart Titles */
+.chart-title {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-light);
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Chart Canvas */
+.chart-wrapper canvas {
+    width: 100% !important;
+    height: calc(100% - 24px) !important;
+}
+
+/* Chart Container Header */
+.sensor-graph h3 {
+    margin-bottom: var(--spacing-md);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-wrapper {
+        height: 200px;
+    }
+}
