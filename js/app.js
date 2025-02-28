@@ -20,10 +20,10 @@
         
         // Optimal ranges for sensor values
         optimalRanges: {
-            ph: { min: 5.5, max: 6.5 },
-            tds: { min: 700, max: 1000 },
-            ec: { min: 1.0, max: 1.5 },
-            temp: { min: 20, max: 25 }
+            ph: { min: 5.7, max: 6.3 },
+            tds: { min: 700, max: 1200 },
+            ec: { min: 1700, max: 2300 },
+            temp: { min: 60, max: 75 }
         },
         
         // Plant data array (will be populated from Google Sheets)
@@ -140,15 +140,18 @@
             });
     }
     
+    // Function to update the handleDataUpdate in app.js
+    // This ensures the dashboard displays the latest measurements
+
     // Handle data updates from the JalikaData module
     function handleDataUpdate() {
-        console.log('Data updated, refreshing UI...');
+        console.log('[Jalika] Data updated, refreshing UI...');
         
         // Get latest data
         app.plants = JalikaData.getPlants();
         const measurements = JalikaData.getMeasurements();
         
-        // Update sensor data
+        // Update sensor data from latest measurements
         if (measurements && measurements.latest) {
             app.sensorData = {
                 ph: measurements.latest.ph,
@@ -157,9 +160,17 @@
                 temp: measurements.latest.temp,
                 lastUpdated: new Date(measurements.latest.timestamp)
             };
+            
+            console.log('[Jalika] Updated dashboard with latest measurements:', {
+                pH: app.sensorData.ph.toFixed(1),
+                TDS: Math.round(app.sensorData.tds),
+                EC: app.sensorData.ec.toFixed(1),
+                WaterTemperature: app.sensorData.temp.toFixed(1),
+                Timestamp: app.sensorData.lastUpdated.toLocaleString()
+            });
         }
         
-        // Update UI components
+        // Update UI components with the latest values
         updateSensorDisplay();
         renderPlantPods();
         renderActionLists();
@@ -168,7 +179,32 @@
         // Remove loading state
         hideLoadingState();
     }
-    
+
+    // Update sensor display with current values
+    function updateSensorDisplay() {
+        // Update value displays with formatted values
+        elements.sensorValues.ph.textContent = app.sensorData.ph.toFixed(1);
+        elements.sensorValues.tds.textContent = Math.round(app.sensorData.tds);
+        elements.sensorValues.ec.textContent = app.sensorData.ec.toFixed(1);
+        elements.sensorValues.temp.textContent = app.sensorData.temp.toFixed(1);
+        
+        // Apply warning/danger classes based on optimal ranges
+        applyValueStatusClass(elements.sensorValues.ph, app.sensorData.ph, app.optimalRanges.ph);
+        applyValueStatusClass(elements.sensorValues.tds, app.sensorData.tds, app.optimalRanges.tds);
+        applyValueStatusClass(elements.sensorValues.ec, app.sensorData.ec, app.optimalRanges.ec);
+        applyValueStatusClass(elements.sensorValues.temp, app.sensorData.temp, app.optimalRanges.temp);
+        
+        // Update graph area with timestamp information
+        if (app.sensorData.lastUpdated) {
+            elements.sensorGraph.innerHTML = `
+                <p class="placeholder-text">Latest measurement from: ${app.sensorData.lastUpdated.toLocaleString()}</p>
+                <p class="placeholder-text">Sensor graph will be implemented soon!</p>
+            `;
+        } else {
+            elements.sensorGraph.innerHTML = '<p class="placeholder-text">Sensor graph will be implemented soon!</p>';
+        }
+    }
+        
     // Show loading state
     function showLoadingState() {
         const loadingOverlay = document.createElement('div');
@@ -268,25 +304,7 @@
         
         console.log(`Switched to ${tabName} tab`);
     }
-    
-    // Update sensor display with current values
-    function updateSensorDisplay() {
-        // Update value displays
-        elements.sensorValues.ph.textContent = app.sensorData.ph.toFixed(1);
-        elements.sensorValues.tds.textContent = app.sensorData.tds;
-        elements.sensorValues.ec.textContent = app.sensorData.ec.toFixed(1);
-        elements.sensorValues.temp.textContent = app.sensorData.temp.toFixed(1);
-        
-        // Apply warning/danger classes based on optimal ranges
-        applyValueStatusClass(elements.sensorValues.ph, app.sensorData.ph, app.optimalRanges.ph);
-        applyValueStatusClass(elements.sensorValues.tds, app.sensorData.tds, app.optimalRanges.tds);
-        applyValueStatusClass(elements.sensorValues.ec, app.sensorData.ec, app.optimalRanges.ec);
-        applyValueStatusClass(elements.sensorValues.temp, app.sensorData.temp, app.optimalRanges.temp);
-        
-        // TODO: Implement actual graph rendering
-        elements.sensorGraph.innerHTML = '<p class="placeholder-text">Sensor graph will be implemented soon!</p>';
-    }
-    
+       
     // Apply status class based on value and optimal range
     function applyValueStatusClass(element, value, range) {
         // Clear existing classes

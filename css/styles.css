@@ -946,3 +946,36 @@ body {
         padding: var(--spacing-xs);
     }
 }
+
+/* Dashboard Data Tables Integration */
+#dashboard .data-tables-container {
+    margin-top: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Ensure the dashboard tab scrolls properly if content is tall */
+#dashboard {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* Add a divider before data tables */
+#dashboard .data-tables-container::before {
+    content: '';
+    display: block;
+    margin: var(--spacing-lg) 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--primary-light), transparent);
+}
+
+/* Ensure tables don't get too wide on large screens */
+.data-table-container {
+    overflow-x: auto;
+}
+
+/* Make table more compact in dashboard */
+#dashboard .data-table th,
+#dashboard .data-table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.9em;
+}

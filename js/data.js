@@ -225,10 +225,10 @@ const JalikaData = (function() {
                 }
             });
             
-            // Add to page - in the recommendations tab
-            const recommendationsTab = document.getElementById('recommendations');
-            if (recommendationsTab) {
-                recommendationsTab.appendChild(tablesContainer);
+            // Add to page - in the dashboard tab
+            const dashboardTab = document.getElementById('dashboard');
+            if (dashboardTab) {
+                dashboardTab.appendChild(tablesContainer);
             }
         }
         
@@ -446,31 +446,60 @@ const JalikaData = (function() {
         };
     }
     
-    // Process measurement data from sheet
+    // Process measurement data from sheet - updated for exact column names
     function processMeasurementData(rawData) {
+        console.log('[JALIKA] Processing measurement data from raw data');
+        
+        // Ensure we have data to process
+        if (!rawData || !rawData.length) {
+            console.warn('[JALIKA] No measurement data available');
+            return {
+                latest: {
+                    ph: 6.5,
+                    tds: 840, 
+                    ec: 1.2,
+                    temp: 22.5,
+                    timestamp: new Date().toISOString()
+                },
+                history: []
+            };
+        }
+        
+        // Log the column names to verify
+        console.log('[JALIKA] Available column names:', Object.keys(rawData[0]).join(', '));
+        
         // Get only the latest measurements (up to 20)
         const latestMeasurements = rawData.slice(-20);
         
         // The very latest entry for current values
         const latest = latestMeasurements[latestMeasurements.length - 1] || {};
         
-        return {
-            latest: {
-                ph: parseFloat(latest.pH) || 6.5,
-                tds: parseFloat(latest.TDS) || 840,
-                ec: parseFloat(latest.EC) || 1.2,
-                temp: parseFloat(latest.Temperature) || 22.5,
-                timestamp: latest.Timestamp || latest.Date || new Date().toISOString()
-            },
-            history: latestMeasurements.map(row => ({
-                timestamp: row.Timestamp || row.Date,
-                ph: parseFloat(row.pH) || 0,
-                tds: parseFloat(row.TDS) || 0,
-                ec: parseFloat(row.EC) || 0,
-                temp: parseFloat(row.Temperature) || 0
-            }))
+        // Using the EXACT column names from your Google Sheet
+        // Handle specific column names with units in parentheses
+        const latestData = {
+            ph: parseFloat(latest['pH'] || 0) || 6.5,
+            tds: parseFloat(latest['TDS (ppm)'] || 0) || 840,
+            ec: parseFloat(latest['EC (µS/cm)'] || 0) || 1.2,
+            temp: parseFloat(latest['Water Temperature (°F)'] || 0) || 22.5,
+            timestamp: latest['Timestamp'] || latest['Date'] || new Date().toISOString()
         };
-    }
+        
+        console.log('[JALIKA] Processed latest measurement with exact column names:', latestData);
+        
+        // Process all entries for history
+        const historyData = latestMeasurements.map(row => ({
+            timestamp: row['Timestamp'] || row['Date'] || new Date().toISOString(),
+            ph: parseFloat(row['pH'] || 0) || 0,
+            tds: parseFloat(row['TDS (ppm)'] || 0) || 0,
+            ec: parseFloat(row['EC (µS/cm)'] || 0) || 0,
+            temp: parseFloat(row['Water Temperature (°F)'] || 0) || 0
+        }));
+        
+        return {
+            latest: latestData,
+            history: historyData
+        };
+    }  
     
     // Generate some variance in the measurement data to simulate change
     function updateMeasurementData(currentData) {
@@ -598,7 +627,7 @@ const JalikaData = (function() {
                         pH: m.ph,
                         TDS: m.tds,
                         EC: m.ec,
-                        Temperature: m.temp
+                        WaterTemperature: m.temp
                     }));
                     
                     updateDataTables(mockPlantData, mockMeasurementData);
