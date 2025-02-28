@@ -1,16 +1,15 @@
-// Jalika - Google Sheets Data Integration
+// Jalika - Google Sheets Data Integration via Apps Script
 
 // Data management module
 const JalikaData = (function() {
     'use strict';
     
-    // Configuration
+    // Configuration - REPLACE THE API_URL WITH YOUR DEPLOYED SCRIPT URL
     const config = {
-        sheetId: '1SaY9e_X0nbCalykRwgHd2QzNmLrrHxVB-Z-WNBnuYzA',
-        useGoogleSheets: true, // Set to false to always use mock data
-        sheetsApiEnabled: true, // Will be set to false if Google Sheets API fails
+        // REPLACE THIS with your working script URL
+        API_URL: 'https://script.google.com/macros/s/AKfycbxkp842q9oTC53_iqScZ3BRxked1ov2afZiwn5N1NZrQUdLqF-4DgiHlCqxW47cSg7O/exec',
         refreshInterval: 5 * 60 * 1000, // 5 minutes in milliseconds
-        debugMode: true // Enable detailed debug info
+        debugMode: true
     };
     
     // Cache for data
@@ -18,9 +17,10 @@ const JalikaData = (function() {
         plants: [],
         measurements: [],
         lastUpdated: null,
-        catchphrases: {}, // Will hold plant catchphrases
-        errorMessage: null, // Will hold any error messages
-        usingMockData: false // Flag to indicate if we're using mock data
+        catchphrases: {},
+        errorMessage: null,
+        usingMockData: false,
+        rawDataTable: null
     };
     
     // Japanese-inspired cute plant names
@@ -65,15 +65,6 @@ const JalikaData = (function() {
             warningEl.id = 'jalika-warning';
             warningEl.className = 'data-warning';
             
-            // Style the warning
-            warningEl.style.backgroundColor = '#fff3cd';
-            warningEl.style.color = '#856404';
-            warningEl.style.padding = '10px 15px';
-            warningEl.style.margin = '10px 0';
-            warningEl.style.borderRadius = '4px';
-            warningEl.style.borderLeft = '5px solid #ffeeba';
-            warningEl.style.fontSize = '14px';
-            
             // Add icon
             const iconEl = document.createElement('i');
             iconEl.className = 'fas fa-exclamation-triangle';
@@ -111,114 +102,211 @@ const JalikaData = (function() {
         cache.usingMockData = false;
     }
     
-    // Try to fetch data from Google Sheets
-    async function fetchGoogleSheetsData() {
-        if (!config.useGoogleSheets || !config.sheetsApiEnabled) {
-            return null;
+    // Create a data table from the raw sheet data
+    function createDataTable(sheetName, data) {
+        if (!data || !data.length) return null;
+        
+        // Create a table element
+        const tableEl = document.createElement('div');
+        tableEl.className = 'data-table-container';
+        
+        // Add title
+        const titleEl = document.createElement('h3');
+        titleEl.textContent = `${sheetName} Data`;
+        titleEl.className = 'data-table-title';
+        tableEl.appendChild(titleEl);
+        
+        // Create table
+        const table = document.createElement('table');
+        table.className = 'data-table';
+        
+        // Create header row
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        
+        // Get all unique keys
+        const allKeys = new Set();
+        data.forEach(row => {
+            Object.keys(row).forEach(key => allKeys.add(key));
+        });
+        const headers = Array.from(allKeys);
+        
+        // Add header cells
+        headers.forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            headerRow.appendChild(th);
+        });
+        
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        
+        // Create table body
+        const tbody = document.createElement('tbody');
+        
+        // Add data rows
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            
+            headers.forEach(header => {
+                const td = document.createElement('td');
+                td.textContent = row[header] !== undefined ? row[header] : '';
+                tr.appendChild(td);
+            });
+            
+            tbody.appendChild(tr);
+        });
+        
+        table.appendChild(tbody);
+        tableEl.appendChild(table);
+        
+        return tableEl;
+    }
+    
+    // Update or create data tables
+    function updateDataTables(plantData, measurementData) {
+        // Create tables if we have data
+        const plantTable = createDataTable('Plants', plantData);
+        const measurementTable = createDataTable('Measurements', measurementData);
+        
+        // Store in cache for future reference
+        cache.rawDataTable = {
+            plants: plantTable,
+            measurements: measurementTable
+        };
+        
+        // Find or create data tables container
+        let tablesContainer = document.getElementById('jalika-data-tables');
+        if (!tablesContainer) {
+            tablesContainer = document.createElement('div');
+            tablesContainer.id = 'jalika-data-tables';
+            tablesContainer.className = 'data-tables-container';
+            
+            // Add title
+            const titleEl = document.createElement('h2');
+            titleEl.textContent = 'Raw Data Tables';
+            titleEl.className = 'data-tables-title';
+            tablesContainer.appendChild(titleEl);
+            
+            // Create tabs
+            const tabsEl = document.createElement('div');
+            tabsEl.className = 'data-tabs';
+            
+            const plantTabEl = document.createElement('button');
+            plantTabEl.textContent = 'Plants Data';
+            plantTabEl.className = 'data-tab active';
+            plantTabEl.dataset.tab = 'plants';
+            
+            const measurementTabEl = document.createElement('button');
+            measurementTabEl.textContent = 'Measurements Data';
+            measurementTabEl.className = 'data-tab';
+            measurementTabEl.dataset.tab = 'measurements';
+            
+            tabsEl.appendChild(plantTabEl);
+            tabsEl.appendChild(measurementTabEl);
+            tablesContainer.appendChild(tabsEl);
+            
+            // Create content container
+            const contentEl = document.createElement('div');
+            contentEl.className = 'data-tab-content';
+            tablesContainer.appendChild(contentEl);
+            
+            // Add click handlers for tabs
+            tabsEl.addEventListener('click', (e) => {
+                if (e.target.classList.contains('data-tab')) {
+                    // Update active tab
+                    const tabs = tabsEl.querySelectorAll('.data-tab');
+                    tabs.forEach(tab => tab.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    // Show selected content
+                    const tabName = e.target.dataset.tab;
+                    updateTabContent(tabName, contentEl);
+                }
+            });
+            
+            // Add to page - in the recommendations tab
+            const recommendationsTab = document.getElementById('recommendations');
+            if (recommendationsTab) {
+                recommendationsTab.appendChild(tablesContainer);
+            }
         }
         
+        // Update tab content
+        const contentEl = tablesContainer.querySelector('.data-tab-content');
+        const activeTab = tablesContainer.querySelector('.data-tab.active');
+        if (contentEl && activeTab) {
+            updateTabContent(activeTab.dataset.tab, contentEl);
+        }
+    }
+    
+    // Update tab content
+    function updateTabContent(tabName, contentEl) {
+        contentEl.innerHTML = '';
+        
+        if (tabName === 'plants' && cache.rawDataTable.plants) {
+            contentEl.appendChild(cache.rawDataTable.plants);
+        } else if (tabName === 'measurements' && cache.rawDataTable.measurements) {
+            contentEl.appendChild(cache.rawDataTable.measurements);
+        }
+    }
+    
+    // Fetch data from Google Sheets API
+    async function fetchGoogleSheetsData() {
         try {
             // Log attempt
             if (config.debugMode) {
-                console.log('[Jalika] Attempting to fetch data from Google Sheets...');
+                console.log('[Jalika] Attempting to fetch data from Google Apps Script API...');
             }
             
-            // First, try to get data using a specific exported CSV format
-            const layoutUrl = `https://docs.google.com/spreadsheets/d/${config.sheetId}/gviz/tq?tqx=out:csv&sheet=GC1`;
-            const measurementsUrl = `https://docs.google.com/spreadsheets/d/${config.sheetId}/gviz/tq?tqx=out:csv&sheet=Measurements`;
+            // Fetch plants data
+            const plantsResponse = await fetch(`${config.API_URL}?sheet=layout`);
             
-            // Try to fetch the layout data
-            const layoutResponse = await fetch(layoutUrl);
-            
-            if (!layoutResponse.ok) {
-                throw new Error(`Failed to fetch plant data: ${layoutResponse.status} ${layoutResponse.statusText}`);
+            if (!plantsResponse.ok) {
+                throw new Error(`Failed to fetch plant data: ${plantsResponse.status} ${plantsResponse.statusText}`);
             }
             
-            const layoutData = await layoutResponse.text();
-            const plants = parseCSV(layoutData);
+            const plantsData = await plantsResponse.json();
             
-            // Try to fetch the measurements data
-            const measurementsResponse = await fetch(measurementsUrl);
+            if (plantsData.status !== 'success' || !plantsData.data) {
+                throw new Error('Invalid response from plants API');
+            }
+            
+            // Fetch measurements data
+            const measurementsResponse = await fetch(`${config.API_URL}?sheet=measurements`);
             
             if (!measurementsResponse.ok) {
                 throw new Error(`Failed to fetch measurement data: ${measurementsResponse.status} ${measurementsResponse.statusText}`);
             }
             
-            const measurementsData = await measurementsResponse.text();
-            const measurements = parseCSV(measurementsData);
+            const measurementsData = await measurementsResponse.json();
+            
+            if (measurementsData.status !== 'success' || !measurementsData.data) {
+                throw new Error('Invalid response from measurements API');
+            }
+            
+            // Update data tables
+            updateDataTables(plantsData.data, measurementsData.data);
             
             // Return the combined data
             return {
-                plants: processPlantData(plants),
-                measurements: processMeasurementData(measurements)
+                plants: processPlantData(plantsData.data),
+                measurements: processMeasurementData(measurementsData.data),
+                rawData: {
+                    plants: plantsData.data,
+                    measurements: measurementsData.data
+                }
             };
         } catch (error) {
             // Log detailed error
-            console.error('[Jalika] Google Sheets fetch error:', error);
+            console.error('[Jalika] Google Sheets API error:', error);
             
             // Show warning message
             const errorDetails = error.message || 'Unknown error';
             showWarningMessage(`[WARNING] Using mocked data! Google Sheets integration failed: ${errorDetails}`);
             
-            // Disable Google Sheets API for future fetches to avoid repeated errors
-            config.sheetsApiEnabled = false;
-            
             return null;
         }
-    }
-    
-    // Parse CSV into array of objects
-    function parseCSV(csvText) {
-        try {
-            const lines = csvText.split('\n');
-            if (lines.length < 2) {
-                throw new Error('CSV has insufficient data');
-            }
-            
-            const headers = lines[0].split(',').map(header => header.trim().replace(/["']/g, ''));
-            
-            return lines.slice(1).map(line => {
-                const values = parseCsvLine(line);
-                const entry = {};
-                
-                headers.forEach((header, index) => {
-                    // Handle case where there might be fewer values than headers
-                    if (index < values.length) {
-                        entry[header] = values[index];
-                    }
-                });
-                
-                return entry;
-            });
-        } catch (error) {
-            console.error('[Jalika] CSV parse error:', error);
-            throw new Error('Failed to parse CSV data: ' + error.message);
-        }
-    }
-    
-    // Helper function to parse CSV line respecting quotes
-    function parseCsvLine(line) {
-        const values = [];
-        let currentValue = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            
-            if (char === '"' && (i === 0 || line[i-1] !== '\\')) {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                values.push(currentValue.trim().replace(/^"|"$/g, ''));
-                currentValue = '';
-            } else {
-                currentValue += char;
-            }
-        }
-        
-        // Add the last value
-        values.push(currentValue.trim().replace(/^"|"$/g, ''));
-        
-        return values;
     }
     
     // Generate plant data for the app
@@ -319,16 +407,16 @@ const JalikaData = (function() {
             // Assign plant data based on your sheet structure
             return {
                 id: index + 1,
-                podNumber: row.PodNumber || index + 1,
-                name: row.PlantName || 'Unknown Plant',
+                podNumber: row.PodNumber || row.Pod || index + 1,
+                name: row.PlantName || row.Plant || 'Unknown Plant',
                 customName: row.CustomName || plantNameGenerator.generate(),
-                type: row.PlantType || 'Unknown',
+                type: row.PlantType || row.Type || 'Unknown',
                 image: 'img/plants/placeholder.svg', // Default image path
                 cartoonImage: 'img/plants/placeholder.svg', // Will be replaced with cartoonized version
-                catchPhrase: row.CatchPhrase || getCatchphraseForPlant(row.PlantName || 'Unknown Plant'),
-                growthStage: row.GrowthStage || 'Vegetative',
-                healthStatus: row.HealthStatus || 'Good',
-                daysInSystem: row.DaysInSystem || Math.floor(Math.random() * 30),
+                catchPhrase: row.CatchPhrase || getCatchphraseForPlant(row.PlantName || row.Plant || 'Unknown Plant'),
+                growthStage: row.GrowthStage || row.Stage || 'Vegetative',
+                healthStatus: row.HealthStatus || row.Health || 'Good',
+                daysInSystem: row.DaysInSystem || row.Days || Math.floor(Math.random() * 30),
                 issues: row.Issues ? [row.Issues] : []
             };
         });
@@ -360,8 +448,8 @@ const JalikaData = (function() {
     
     // Process measurement data from sheet
     function processMeasurementData(rawData) {
-        // Get only the latest measurements
-        const latestMeasurements = rawData.slice(-20); // Get last 20 entries for graph
+        // Get only the latest measurements (up to 20)
+        const latestMeasurements = rawData.slice(-20);
         
         // The very latest entry for current values
         const latest = latestMeasurements[latestMeasurements.length - 1] || {};
@@ -372,10 +460,10 @@ const JalikaData = (function() {
                 tds: parseFloat(latest.TDS) || 840,
                 ec: parseFloat(latest.EC) || 1.2,
                 temp: parseFloat(latest.Temperature) || 22.5,
-                timestamp: latest.Timestamp || new Date().toISOString()
+                timestamp: latest.Timestamp || latest.Date || new Date().toISOString()
             },
             history: latestMeasurements.map(row => ({
-                timestamp: row.Timestamp,
+                timestamp: row.Timestamp || row.Date,
                 ph: parseFloat(row.pH) || 0,
                 tds: parseFloat(row.TDS) || 0,
                 ec: parseFloat(row.EC) || 0,
@@ -493,6 +581,27 @@ const JalikaData = (function() {
                     // First load: generate everything
                     cache.plants = generatePlantData();
                     cache.measurements = generateMeasurementData();
+                    
+                    // Create mock data tables
+                    const mockPlantData = cache.plants.map(plant => ({
+                        PodNumber: plant.podNumber,
+                        PlantName: plant.name,
+                        PlantType: plant.type,
+                        GrowthStage: plant.growthStage,
+                        HealthStatus: plant.healthStatus,
+                        DaysInSystem: plant.daysInSystem,
+                        Issues: plant.issues.join(', ')
+                    }));
+                    
+                    const mockMeasurementData = cache.measurements.history.map(m => ({
+                        Timestamp: m.timestamp,
+                        pH: m.ph,
+                        TDS: m.tds,
+                        EC: m.ec,
+                        Temperature: m.temp
+                    }));
+                    
+                    updateDataTables(mockPlantData, mockMeasurementData);
                 } else {
                     // Just update measurements with some variance
                     cache.measurements = updateMeasurementData(cache.measurements);
