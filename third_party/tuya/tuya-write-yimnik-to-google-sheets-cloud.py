@@ -28,9 +28,13 @@ SPREADSHEET_NAME = os.environ.get("SPREADSHEET_NAME", "Hydroponics Datasheet")
 def get_city_from_sheet():
     """Get the city from the Google Sheet"""
     try:
-        # Get credentials from environment variable
-        service_account_info = json.loads(os.environ.get("GOOGLE_CREDENTIALS"))
-        creds = ServiceAccountCredentials.from_dict(service_account_info, SCOPE)
+        # Write credentials to a temporary file
+        credentials_json = os.environ.get("GOOGLE_CREDENTIALS")
+        with open("temp_credentials.json", "w") as f:
+            f.write(credentials_json)
+        
+        # Use the file-based method instead of from_dict
+        creds = ServiceAccountCredentials.from_json_keyfile_name("temp_credentials.json", SCOPE)
         client = gspread.authorize(creds)
         
         # Open spreadsheet and sheet
@@ -111,9 +115,13 @@ def get_sensor_data():
 def append_to_google_sheets(data, weather_data):
     """Append data to Google Sheets"""
     try:
-        # Get credentials from environment variable
-        service_account_info = json.loads(os.environ.get("GOOGLE_CREDENTIALS"))
-        creds = ServiceAccountCredentials.from_dict(service_account_info, SCOPE)
+        # Write credentials to a temporary file
+        credentials_json = os.environ.get("GOOGLE_CREDENTIALS")
+        with open("temp_credentials.json", "w") as f:
+            f.write(credentials_json)
+        
+        # Use the file-based method instead of from_dict
+        creds = ServiceAccountCredentials.from_json_keyfile_name("temp_credentials.json", SCOPE)
         client = gspread.authorize(creds)
         
         # Open spreadsheet and sheet
