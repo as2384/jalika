@@ -373,7 +373,7 @@ const JalikaData = (function() {
             // Update data tables with only the processed data
             JalikaData.measurementsData = measurementsData
             JalikaData.processedPlantData = processedPlantData
-            updateDataTables(processedPlantData, measurementsData.data);
+            updateDataTables(plantsRawData.data, measurementsData.data);
 
             // Return the combined data
             return {
