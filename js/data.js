@@ -103,16 +103,31 @@ const JalikaData = (function() {
     }
     
     // Create a data table from the raw sheet data
+    // Improved empty data checking for createDataTable function
     function createDataTable(sheetName, data) {
-        if (!data || !data.length) return null;
+        // More strict check for empty data
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            console.warn(`[Jalika] No data to create table for ${sheetName}`);
+            return createEmptyTable(sheetName);
+        }
+        
+        // Check if the data array contains actual objects with properties
+        const validRows = data.filter(row => row && typeof row === 'object' && Object.keys(row).length > 0);
+        
+        if (validRows.length === 0) {
+            console.warn(`[Jalika] Data for ${sheetName} contains no valid rows`);
+            return createEmptyTable(sheetName);
+        }
+        
+        console.log(`[Jalika] Creating data table for ${sheetName} with ${validRows.length} rows`);
         
         // Create a table element
         const tableEl = document.createElement('div');
         tableEl.className = 'data-table-container';
         
-        // Add title
+        // Add title with row count
         const titleEl = document.createElement('h3');
-        titleEl.textContent = `${sheetName} Data`;
+        titleEl.textContent = `${sheetName} Data (${validRows.length} rows)`;
         titleEl.className = 'data-table-title';
         tableEl.appendChild(titleEl);
         
@@ -124,12 +139,27 @@ const JalikaData = (function() {
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
         
-        // Get all unique keys
+        // Get all unique keys from valid rows
         const allKeys = new Set();
-        data.forEach(row => {
-            Object.keys(row).forEach(key => allKeys.add(key));
+        validRows.forEach(row => {
+            Object.keys(row).forEach(key => {
+                // Only add non-empty keys
+                if (key && key.trim() !== '') {
+                    allKeys.add(key);
+                }
+            });
         });
-        const headers = Array.from(allKeys);
+        
+        // Sort headers for better readability with Pod No. first
+        let headers = Array.from(allKeys);
+        headers.sort((a, b) => {
+            if (a === 'Pod No.') return -1;
+            if (b === 'Pod No.') return 1;
+            return a.localeCompare(b);
+        });
+        
+        // Log headers to help with debugging
+        console.log(`[Jalika] Table headers for ${sheetName}:`, headers.join(', '));
         
         // Add header cells
         headers.forEach(header => {
@@ -144,13 +174,37 @@ const JalikaData = (function() {
         // Create table body
         const tbody = document.createElement('tbody');
         
-        // Add data rows
-        data.forEach(row => {
+        // Add data rows - only using valid rows
+        validRows.forEach((row, rowIndex) => {
             const tr = document.createElement('tr');
+            
+            // Highlight every other row
+            if (rowIndex % 2 === 1) {
+                tr.className = 'alternate-row';
+            }
             
             headers.forEach(header => {
                 const td = document.createElement('td');
-                td.textContent = row[header] !== undefined ? row[header] : '';
+                const value = row[header];
+                
+                // Format cell content
+                if (value === undefined || value === null) {
+                    td.textContent = '';
+                    td.className = 'empty-cell';
+                } else if (value === '') {
+                    td.textContent = '';
+                    td.className = 'empty-cell';
+                } else {
+                    td.textContent = value;
+                    
+                    // Add classes for specific column types
+                    if (header === 'Pod No.') {
+                        td.className = 'pod-number-cell';
+                    } else if (header === 'Date Planted' || header.includes('Date')) {
+                        td.className = 'date-cell';
+                    }
+                }
+                
                 tr.appendChild(td);
             });
             
@@ -162,6 +216,27 @@ const JalikaData = (function() {
         
         return tableEl;
     }
+    
+    // Helper function to create an empty table with a message
+    function createEmptyTable(sheetName) {
+        const tableEl = document.createElement('div');
+        tableEl.className = 'data-table-container';
+        
+        // Add title
+        const titleEl = document.createElement('h3');
+        titleEl.textContent = `${sheetName} Data`;
+        titleEl.className = 'data-table-title';
+        tableEl.appendChild(titleEl);
+        
+        // Add empty message
+        const msgEl = document.createElement('p');
+        msgEl.textContent = 'No data available for this table.';
+        msgEl.className = 'empty-table-message';
+        tableEl.appendChild(msgEl);
+        
+        return tableEl;
+    }
+    
     
     // Update or create data tables
     function updateDataTables(plantData, measurementData) {
@@ -259,22 +334,32 @@ const JalikaData = (function() {
                 console.log('[Jalika] Attempting to fetch data from Google Apps Script API...');
             }
             
-            // Fetch plants data
-            const plantsResponse = await fetch(`${config.API_URL}?sheet=layout`);
-            
+            // Fetch raw plants data from Layout - GC1 tab
+            // Update this in fetchGoogleSheetsData function to get a cleaner version of the data
+            // Replace the existing plantsData processing with this:
+            const plantsResponse = await fetch(`${config.API_URL}?sheet=Layout - GC1`);
             if (!plantsResponse.ok) {
                 throw new Error(`Failed to fetch plant data: ${plantsResponse.status} ${plantsResponse.statusText}`);
             }
-            
-            const plantsData = await plantsResponse.json();
-            
-            if (plantsData.status !== 'success' || !plantsData.data) {
+
+            const plantsRawData = await plantsResponse.json();
+            if (plantsRawData.status !== 'success' || !plantsRawData.data) {
                 throw new Error('Invalid response from plants API');
             }
-            
+
+            // Log the raw data to help with debugging
+            console.log('[Jalika] Raw plants data sample (first few rows):');
+            for (let i = 0; i < Math.min(10, plantsRawData.data.length); i++) {
+                console.log(`Row ${i+1}:`, plantsRawData.data[i]);
+            }
+
+            // Process the raw data correctly starting from row 6
+            JalikaData.plantsRawData = plantsRawData
+            const processedPlantData = processLayoutSheetWithHeadersOnRow6(plantsRawData.data);
+
             // Fetch measurements data
             const measurementsResponse = await fetch(`${config.API_URL}?sheet=measurements`);
-            
+
             if (!measurementsResponse.ok) {
                 throw new Error(`Failed to fetch measurement data: ${measurementsResponse.status} ${measurementsResponse.statusText}`);
             }
@@ -284,16 +369,18 @@ const JalikaData = (function() {
             if (measurementsData.status !== 'success' || !measurementsData.data) {
                 throw new Error('Invalid response from measurements API');
             }
-            
-            // Update data tables
-            updateDataTables(plantsData.data, measurementsData.data);
-            
+
+            // Update data tables with only the processed data
+            JalikaData.measurementsData = measurementsData
+            JalikaData.processedPlantData = processedPlantData
+            updateDataTables(processedPlantData, measurementsData.data);
+
             // Return the combined data
             return {
-                plants: processPlantData(plantsData.data),
+                plants: processPlantData(processedPlantData),
                 measurements: processMeasurementData(measurementsData.data),
                 rawData: {
-                    plants: plantsData.data,
+                    plants: processedPlantData, // Use the processed data here, not the raw data
                     measurements: measurementsData.data
                 }
             };
@@ -308,118 +395,269 @@ const JalikaData = (function() {
             return null;
         }
     }
-    
-    // Generate plant data for the app
-    function generatePlantData() {
-        console.log('[Jalika] Generating mock plant data...');
+
+    // New function to process sheet data with headers on row 6
+    function processLayoutSheetWithHeadersOnRow6(rawData) {
+        console.log('[Jalika] Processing Layout sheet with headers on row 6');
+        console.log('[Jalika] Raw data received:', rawData.length, 'rows');
         
-        return [
-            { 
-                id: 1,
-                podNumber: 1,
-                name: 'Basil',
-                customName: plantNameGenerator.generate(),
-                type: 'Herb',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg',
-                catchPhrase: getCatchphraseForPlant('Basil'),
-                growthStage: 'Vegetative',
-                healthStatus: 'Good',
-                daysInSystem: 14,
-                issues: []
-            },
-            { 
-                id: 2,
-                podNumber: 2,
-                name: 'Lettuce',
-                customName: plantNameGenerator.generate(),
-                type: 'Leafy Green',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg',
-                catchPhrase: getCatchphraseForPlant('Lettuce'),
-                growthStage: 'Vegetative',
-                healthStatus: 'Good',
-                daysInSystem: 10,
-                issues: []
-            },
-            { 
-                id: 3,
-                podNumber: 3,
-                name: 'Mint',
-                customName: plantNameGenerator.generate(),
-                type: 'Herb',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg',
-                catchPhrase: getCatchphraseForPlant('Mint'),
-                growthStage: 'Vegetative',
-                healthStatus: 'Warning',
-                daysInSystem: 21,
-                issues: ['Yellow leaves - possible nutrient deficiency']
-            },
-            { 
-                id: 4,
-                podNumber: 4,
-                name: 'Strawberry',
-                customName: plantNameGenerator.generate(),
-                type: 'Fruit',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg',
-                catchPhrase: getCatchphraseForPlant('Strawberry'),
-                growthStage: 'Flowering',
-                healthStatus: 'Good',
-                daysInSystem: 30,
-                issues: []
-            },
-            { 
-                id: 5,
-                podNumber: 5,
-                name: 'Cilantro',
-                customName: plantNameGenerator.generate(),
-                type: 'Herb',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg',
-                catchPhrase: getCatchphraseForPlant('Cilantro'),
-                growthStage: 'Vegetative',
-                healthStatus: 'Good',
-                daysInSystem: 8,
-                issues: []
-            },
-            { 
-                id: 6,
-                podNumber: 6,
-                name: 'Pepper',
-                customName: plantNameGenerator.generate(),
-                type: 'Vegetable',
-                image: 'img/plants/placeholder.svg',
-                cartoonImage: 'img/plants/placeholder.svg', 
-                catchPhrase: getCatchphraseForPlant('Pepper'),
-                growthStage: 'Fruiting',
-                healthStatus: 'Good',
-                daysInSystem: 45,
-                issues: []
+        // Check if we have enough rows
+        if (rawData.length < 7) { // Need at least 7 rows (6 for header + 1 for data)
+            console.warn('[Jalika] Not enough rows in data (need at least 7)');
+            return [];
+        }
+        
+        // Extract header row (row 6, index 5)
+        const headerRow = rawData[5];
+        console.log('[Jalika] Header row (row 6):', headerRow);
+        
+        // Continue only if headerRow contains expected columns
+        if (!headerRow || !headerRow['A']) {
+            console.warn('[Jalika] Row 6 does not contain expected columns');
+            return [];
+        }
+        
+        // Extract all column names from header row
+        const columnNames = Object.keys(headerRow);
+        
+        // Extract column headers from the header row values
+        const headerValues = {};
+        columnNames.forEach(col => {
+            if (headerRow[col]) {
+                headerValues[col] = headerRow[col];
             }
-        ];
+        });
+        
+        console.log('[Jalika] Extracted headers:', headerValues);
+        
+        // Process data rows (rows 7+, index 6+)
+        const processedData = [];
+        
+        for (let i = 6; i < rawData.length; i++) {
+            const dataRow = rawData[i];
+            
+            // Skip empty rows
+            if (!dataRow || Object.keys(dataRow).length === 0) continue;
+            
+            // Skip rows that don't have a Pod No.
+            const podNoColumn = columnNames.find(col => headerRow[col] === 'Pod No.');
+            if (!podNoColumn || !dataRow[podNoColumn]) continue;
+            
+            // Create a new row with proper column names
+            const processedRow = {};
+            
+            columnNames.forEach(colKey => {
+                const headerValue = headerRow[colKey];
+                if (headerValue && headerValue.trim() !== '') {
+                    processedRow[headerValue] = dataRow[colKey];
+                }
+            });
+            
+            // Only add rows that have actual pod data
+            if (processedRow['Pod No.'] && !isNaN(parseInt(processedRow['Pod No.']))) {
+                processedData.push(processedRow);
+            }
+        }
+        
+        console.log(`[Jalika] Processed ${processedData.length} plant data rows`);
+        if (processedData.length > 0) {
+            console.log('[Jalika] First processed row:', processedData[0]);
+        }
+        
+        return processedData;
     }
     
-    // Process plant data from sheet into app format
+    // Process plant data from sheet into app format - updated for Layout - GC1 columns
     function processPlantData(rawData) {
-        return rawData.map((row, index) => {
-            // Assign plant data based on your sheet structure
+        console.log('[Jalika] Processing plant data, received', rawData.length, 'rows');
+        
+        // Log key names to help diagnose field mapping issues
+        if (rawData.length > 0) {
+            console.log('[Jalika] Available columns:', Object.keys(rawData[0]).join(', '));
+        }
+        
+        // Filter to only include rows that have a valid Pod No.
+        const podData = rawData.filter(row => {
+            // Try to get the Pod No. value
+            const podValue = row['Pod No.'] || '';
+            
+            // Check if it's a valid pod number (non-empty and numeric)
+            const isValid = podValue && !isNaN(parseInt(podValue));
+            
+            return isValid;
+        });
+        
+        console.log(`[Jalika] Found ${podData.length} valid pod entries`);
+        
+        // If no pods were found, log more details about the data
+        if (podData.length === 0 && rawData.length > 0) {
+            console.warn('[Jalika] No valid pods found in data. Sample row:', JSON.stringify(rawData[0]));
+            return []; // Return empty array if no valid data
+        }
+        
+        // Transform to app data structure
+        return podData.map((row, index) => {
+            const podNumber = parseInt(row['Pod No.']) || (index + 1);
+            const plantName = row['Growing Crop'] || 'Unknown Plant';
+            
             return {
                 id: index + 1,
-                podNumber: row.PodNumber || row.Pod || index + 1,
-                name: row.PlantName || row.Plant || 'Unknown Plant',
-                customName: row.CustomName || plantNameGenerator.generate(),
-                type: row.PlantType || row.Type || 'Unknown',
-                image: 'img/plants/placeholder.svg', // Default image path
-                cartoonImage: 'img/plants/placeholder.svg', // Will be replaced with cartoonized version
-                catchPhrase: row.CatchPhrase || getCatchphraseForPlant(row.PlantName || row.Plant || 'Unknown Plant'),
-                growthStage: row.GrowthStage || row.Stage || 'Vegetative',
-                healthStatus: row.HealthStatus || row.Health || 'Good',
-                daysInSystem: row.DaysInSystem || row.Days || Math.floor(Math.random() * 30),
-                issues: row.Issues ? [row.Issues] : []
+                podNumber: podNumber,
+                name: plantName,
+                customName: plantNameGenerator.generate(),
+                
+                // Now we can directly use the correctly named columns
+                specimen: row['Specimen'] || '',
+                category: row['Category'] || '',
+                brand: row['Brand'] || '',
+                datePlanted: row['Date Planted'] || '',
+                growingCrop: row['Growing Crop'] || '',
+                
+                // Other fields
+                type: row['Category'] || 'Unknown',
+                image: 'img/plants/placeholder.svg',
+                cartoonImage: 'img/plants/placeholder.svg',
+                catchPhrase: getCatchphraseForPlant(plantName),
+                growthStage: 'Vegetative',
+                healthStatus: 'Good',
+                daysInSystem: calculateDaysInSystem(row['Date Planted'] || ''),
+                issues: []
             };
         });
+    }
+
+    // Helper to map a row to a plant object
+    function mapRowToPlant(row, index) {
+        // Get pod number, with fallbacks for different column names
+        const podValue = row['Pod No.'] || row['Pod_No'] || row['PodNo'] || row['Pod Number'] || '';
+        const podNumber = parseInt(podValue) || (index + 1);
+        
+        // Determine plant name - first look at Growing Crop, then fall back to "Unknown Plant"
+        const plantName = row['Growing Crop'] || row['Crop'] || row['Plant'] || 'Unknown Plant';
+        
+        return {
+            id: index + 1,
+            podNumber: podNumber,
+            name: plantName,
+            customName: plantNameGenerator.generate(),
+            
+            // Add the additional fields from the sheet with fallbacks for different column names
+            specimen: row['Specimen'] || row['Variety'] || '',
+            category: row['Category'] || row['Type'] || '',
+            brand: row['Brand'] || row['Seed Brand'] || '',
+            datePlanted: row['Date Planted'] || row['Planted Date'] || row['Planting Date'] || '',
+            growingCrop: row['Growing Crop'] || row['Crop'] || row['Plant'] || '',
+            
+            // Default values for UI data
+            type: row['Category'] || row['Type'] || 'Unknown',
+            image: 'img/plants/placeholder.svg',
+            cartoonImage: 'img/plants/placeholder.svg',
+            catchPhrase: getCatchphraseForPlant(plantName),
+            growthStage: 'Vegetative',
+            healthStatus: 'Good',
+            daysInSystem: calculateDaysInSystem(row['Date Planted'] || row['Planted Date'] || ''),
+            issues: []
+        };
+    }
+
+    // Helper function to calculate days in system based on planting date
+    function calculateDaysInSystem(plantingDateStr) {
+        if (!plantingDateStr) return 0;
+        
+        try {
+            const plantingDate = new Date(plantingDateStr);
+            const now = new Date();
+            
+            // Check if date is valid
+            if (isNaN(plantingDate.getTime())) {
+                return 0;
+            }
+            
+            // Calculate difference in days
+            const diffTime = Math.abs(now - plantingDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays;
+        } catch (error) {
+            console.warn('Error calculating days in system:', error);
+            return 0;
+        }
+    }
+
+    // Generate backup plant data with 18 pods for when the API fails
+    function generatePlantData() {
+        console.log('[Jalika] Generating mock plant data for 18 pods...');
+        
+        // List of plant types to use
+        const plantTypes = [
+            'Basil', 'Lettuce', 'Mint', 'Strawberry', 'Cilantro', 'Pepper',
+            'Tomato', 'Kale', 'Spinach', 'Arugula', 'Thyme', 'Rosemary',
+            'Chives', 'Parsley', 'Dill', 'Sage', 'Oregano', 'Bok Choy'
+        ];
+        
+        // Generate 18 plants (one for each pod)
+        return Array.from({ length: 18 }, (_, i) => {
+            const plantName = plantTypes[i % plantTypes.length];
+            const podNumber = i + 1;
+            
+            return { 
+                id: podNumber,
+                podNumber: podNumber,
+                name: plantName,
+                customName: plantNameGenerator.generate(),
+                
+                // Mock data for additional fields
+                specimen: `${plantName} Variety`,
+                category: getPlantCategory(plantName),
+                brand: 'Jalika Seeds',
+                datePlanted: randomPastDate(30),
+                growingCrop: plantName,
+                
+                // Other UI data
+                type: getPlantCategory(plantName),
+                image: 'img/plants/placeholder.svg',
+                cartoonImage: 'img/plants/placeholder.svg',
+                catchPhrase: getCatchphraseForPlant(plantName),
+                growthStage: 'Vegetative',
+                healthStatus: 'Good',
+                daysInSystem: Math.floor(Math.random() * 30) + 1,
+                issues: []
+            };
+        });
+    }
+
+    // Helper function to get plant category
+    function getPlantCategory(plantName) {
+        // Map plant names to categories
+        const categories = {
+            'Basil': 'Herb',
+            'Mint': 'Herb',
+            'Cilantro': 'Herb',
+            'Thyme': 'Herb',
+            'Rosemary': 'Herb',
+            'Chives': 'Herb',
+            'Parsley': 'Herb',
+            'Dill': 'Herb',
+            'Sage': 'Herb',
+            'Oregano': 'Herb',
+            'Lettuce': 'Leafy Green',
+            'Kale': 'Leafy Green',
+            'Spinach': 'Leafy Green',
+            'Arugula': 'Leafy Green',
+            'Bok Choy': 'Leafy Green',
+            'Strawberry': 'Fruit',
+            'Tomato': 'Vegetable/Fruit',
+            'Pepper': 'Vegetable'
+        };
+        
+        return categories[plantName] || 'Unknown';
+    }
+
+    // Generate a random past date within the last 'days' days
+    function randomPastDate(days) {
+        const date = new Date();
+        date.setDate(date.getDate() - Math.floor(Math.random() * days));
+        return date.toISOString().split('T')[0]; // YYYY-MM-DD format
     }
     
     // Generate measurement data for the app

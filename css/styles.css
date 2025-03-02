@@ -1056,3 +1056,105 @@ body {
         height: 200px;
     }
 }
+
+/* Add these styles to styles.css for the additional plant info */
+
+.plant-additional-info {
+    margin-bottom: var(--spacing-lg);
+    background-color: rgba(157, 206, 255, 0.05);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    border-left: 3px solid var(--primary-color);
+}
+
+.plant-additional-info h4 {
+    color: var(--primary-color);
+    font-size: var(--font-size-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Enhance the stat items */
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.stat-label {
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.stat-value {
+    font-weight: 600;
+}
+
+/* Add smooth transition between plant detail sections */
+.plant-additional-info,
+.plant-stats,
+.plant-health-issues {
+    transition: all 0.3s ease;
+}
+
+/* Add hover effect to stat items */
+.stat-item:hover {
+    background-color: rgba(157, 206, 255, 0.1);
+}
+
+.data-table-container {
+    margin-bottom: 30px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    border-bottom: 2px solid #ddd;
+}
+
+.data-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.data-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+.data-table .alternate-row {
+    background-color: #f8f8f8;
+}
+
+.data-table .empty-cell {
+    color: #ccc;
+    font-style: italic;
+}
+
+.data-table .pod-number-cell {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.data-table .date-cell {
+    color: var(--secondary-color);
+}
+
+.empty-table-message {
+    padding: 20px;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+}
