@@ -87,7 +87,7 @@ const JalikaCharts = (function() {
                 const chartTitles = {
                     'ph': 'pH Level',
                     'tds': 'TDS (ppm)',
-                    'ec': 'EC (mS/cm)',
+                    'ec': 'EC (µS/cm)',
                     'temp': 'Temperature (°F)'
                 };
                 
@@ -329,7 +329,7 @@ const JalikaCharts = (function() {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'EC (mS/cm)',
+                        label: 'EC (µS/cm)',
                         data: data,
                         borderColor: config.colors.ec.line,
                         backgroundColor: config.colors.ec.fill,
@@ -361,7 +361,7 @@ const JalikaCharts = (function() {
                         max: Math.max(config.optimalRanges.ec.max * 1.1, Math.max(...data) * 1.1),
                         title: {
                             display: true,
-                            text: 'EC (mS/cm)'
+                            text: 'EC (µS/cm)'
                         },
                         grid: {
                             color: 'rgba(200, 200, 200, 0.2)'
