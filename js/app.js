@@ -133,6 +133,58 @@
                 elements.appVersion.textContent = `${dateString}`;
             });
     }
+
+    function addDebugButton() {
+        // Check if debug button already exists
+        if (document.getElementById('jalika-debug-btn')) {
+            return;
+        }
+        
+        // Create debug button
+        const debugBtn = document.createElement('button');
+        debugBtn.id = 'jalika-debug-btn';
+        debugBtn.innerHTML = '🔍 Debug Plants';
+        debugBtn.style.position = 'fixed';
+        debugBtn.style.bottom = '10px';
+        debugBtn.style.right = '10px';
+        debugBtn.style.zIndex = '9999';
+        debugBtn.style.padding = '8px 12px';
+        debugBtn.style.backgroundColor = '#8DC26F';
+        debugBtn.style.color = 'white';
+        debugBtn.style.border = 'none';
+        debugBtn.style.borderRadius = '4px';
+        debugBtn.style.cursor = 'pointer';
+        debugBtn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+        
+        // Add click event
+        debugBtn.addEventListener('click', () => {
+            console.log('[Jalika Debug] Debug button clicked');
+            
+            // Log current state
+            console.log('[Jalika Debug] Current app state:', {
+                currentTab: app.currentTab,
+                plantsCount: app.plants.length,
+                plantsData: app.plants
+            });
+            
+            // Debug plants tab
+            debugPlantsTab();
+            
+            // Manually force data refresh
+            JalikaData.refreshData()
+                .then(result => {
+                    console.log('[Jalika Debug] Manual data refresh result:', result);
+                    renderPlantPods();
+                })
+                .catch(err => {
+                    console.error('[Jalika Debug] Manual data refresh error:', err);
+                });
+        });
+        
+        // Add to body
+        document.body.appendChild(debugBtn);
+        console.log('[Jalika] Debug button added');
+    }
     
     // Function to update the handleDataUpdate in app.js
     // This ensures the dashboard displays the latest measurements
@@ -181,6 +233,7 @@
             
             // Remove loading state
             hideLoadingState();
+            addDebugButton();
         } catch (error) {
             console.error('[Jalika] Error in handleDataUpdate:', error);
         }
@@ -395,11 +448,87 @@
             elements.modalIssuesList.innerHTML = '<li class="no-issues">No issues detected</li>';
         }
         
+        // Update or create the additional information section
+        updateAdditionalPlantInfo(plant);
+        
         // Show the modal
         elements.plantDetailModal.style.display = 'flex';
         
         // Store current plant ID for edit functionality
         elements.plantDetailModal.setAttribute('data-current-plant-id', plant.id);
+    }
+
+    // Add this new function to display the additional plant information
+    function updateAdditionalPlantInfo(plant) {
+        // Check if additional info section already exists
+        let additionalInfoSection = document.getElementById('modal-additional-info');
+        
+        if (!additionalInfoSection) {
+            // Create the section if it doesn't exist
+            additionalInfoSection = document.createElement('div');
+            additionalInfoSection.id = 'modal-additional-info';
+            additionalInfoSection.className = 'plant-additional-info';
+            
+            // Add a heading
+            const heading = document.createElement('h4');
+            heading.textContent = 'Plant Details';
+            additionalInfoSection.appendChild(heading);
+            
+            // Find where to insert it (before the plant-actions section)
+            const actionsSection = document.querySelector('.plant-actions');
+            if (actionsSection && actionsSection.parentNode) {
+                actionsSection.parentNode.insertBefore(additionalInfoSection, actionsSection);
+            } else {
+                // Fallback - append to modal content
+                document.querySelector('.modal-content').appendChild(additionalInfoSection);
+            }
+        }
+        
+        // Update the content with the additional information
+        additionalInfoSection.innerHTML = `
+            <h4>Plant Details</h4>
+            <div class="stat-item">
+                <div class="stat-label">Specimen</div>
+                <div class="stat-value">${plant.specimen || 'Unknown'}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Category</div>
+                <div class="stat-value">${plant.category || 'Unknown'}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Brand</div>
+                <div class="stat-value">${plant.brand || 'Unknown'}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Date Planted</div>
+                <div class="stat-value">${formatPlantDate(plant.datePlanted) || 'Unknown'}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Growing Crop</div>
+                <div class="stat-value">${plant.growingCrop || 'Unknown'}</div>
+            </div>
+        `;
+    }
+
+    // Helper function to format the plant date nicely
+    function formatPlantDate(dateString) {
+        if (!dateString) return '';
+        
+        try {
+            // Handle different date formats
+            const date = new Date(dateString);
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                return dateString; // Return original if parsing failed
+            }
+            
+            // Format in a nice human-readable format
+            return JalikaConfig.formatDate(date, JalikaConfig.formats.dateTime.medium);
+        } catch (error) {
+            console.warn('Error formatting plant date:', error);
+            return dateString;
+        }
     }
     
     // Handle image upload
@@ -577,6 +706,159 @@
                 elements.refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
             });
     }
+
+    // Add this debug function to app.js to help troubleshoot plant rendering issues
+    function debugPlantsTab() {
+        console.log('[Jalika Debug] Plants tab status:');
+        
+        const plantsTab = document.getElementById('plants');
+        if (!plantsTab) {
+            console.error('[Jalika Debug] Plants tab element not found!');
+            return;
+        }
+        
+        console.log('[Jalika Debug] Plants tab found, classes:', plantsTab.className);
+        console.log('[Jalika Debug] Plants tab visibility:', plantsTab.style.display || 'inherited');
+        
+        const plantsContainer = document.querySelector('.plant-pods');
+        if (!plantsContainer) {
+            console.error('[Jalika Debug] Plants container (.plant-pods) not found!');
+            return;
+        }
+        
+        console.log('[Jalika Debug] Plants container found, current content:', plantsContainer.innerHTML);
+        console.log('[Jalika Debug] Current app.plants data:', app.plants.length, 'plants');
+        
+        // Force re-render the plants
+        console.log('[Jalika Debug] Forcing plant pods re-render');
+        renderPlantPods();
+        
+        // Force tab activation
+        console.log('[Jalika Debug] Forcing Plants tab activation');
+        switchTab('plants');
+    }
+
+    // Enhanced renderPlantPods function with better error handling
+    function renderPlantPods() {
+        console.log('[Jalika] Rendering plant pods, count:', app.plants.length);
+        
+        // Validate plants container
+        if (!elements.plantPods) {
+            console.error('[Jalika] ERROR: Plant pods container element not found!');
+            
+            // Try to get it again
+            elements.plantPods = document.querySelector('.plant-pods');
+            if (!elements.plantPods) {
+                console.error('[Jalika] FATAL: Cannot find plant pods container. Plants cannot be displayed.');
+                return;
+            }
+        }
+        
+        // Clear existing pods
+        elements.plantPods.innerHTML = '';
+        
+        // Check if we have plants
+        if (!app.plants || app.plants.length === 0) {
+            console.warn('[Jalika] No plants data available to render');
+            elements.plantPods.innerHTML = '<div class="no-plants-message">No plants found. Please refresh data.</div>';
+            return;
+        }
+        
+        // Add each plant pod
+        app.plants.forEach((plant, index) => {
+            try {
+                // Validate required plant data
+                if (!plant) {
+                    console.warn(`[Jalika] Plant at index ${index} is undefined`);
+                    return;
+                }
+                
+                const podNumber = plant.podNumber || index + 1;
+                const plantName = plant.name || 'Unknown Plant';
+                
+                console.log(`[Jalika] Rendering plant pod ${podNumber}: ${plantName}`);
+                
+                const podElement = document.createElement('div');
+                podElement.className = 'plant-pod';
+                podElement.setAttribute('data-pod-id', podNumber);
+                
+                podElement.innerHTML = `
+                    <div class="pod-number">${podNumber}</div>
+                    <div class="pod-plant-image">
+                        <img src="${plant.image || 'img/plants/placeholder.svg'}" alt="${plantName}">
+                    </div>
+                    <div class="pod-plant-name">${plantName}</div>
+                `;
+                
+                // Add click event to show plant details
+                podElement.addEventListener('click', () => {
+                    showPlantDetails(plant);
+                });
+                
+                elements.plantPods.appendChild(podElement);
+            } catch (error) {
+                console.error(`[Jalika] Error rendering plant pod ${index}:`, error);
+            }
+        });
+        
+        console.log('[Jalika] Plant pods rendering complete');
+    }
+
+    // Enhanced switchTab function to ensure visibility
+    function switchTab(tabName) {
+        console.log(`[Jalika] Switching to ${tabName} tab`);
+        
+        // Update current tab
+        app.currentTab = tabName;
+        
+        // Update tab buttons
+        elements.tabButtons.forEach(button => {
+            if (button.getAttribute('data-tab') === tabName) {
+                button.classList.add('active');
+            } else {
+                button.classList.remove('active');
+            }
+        });
+        
+        // Update tab panels with enhanced visibility check
+        elements.tabPanels.forEach(panel => {
+            if (panel.id === tabName) {
+                panel.classList.add('active');
+                panel.style.display = 'block'; // Ensure visibility
+                console.log(`[Jalika] Activated tab ${panel.id}`);
+                
+                // If switching to plants tab, ensure plants are rendered
+                if (tabName === 'plants') {
+                    console.log('[Jalika] Plants tab activated, refreshing plant pods');
+                    renderPlantPods();
+                }
+            } else {
+                panel.classList.remove('active');
+                panel.style.display = ''; // Reset to default
+            }
+        });
+    }
+
+    // Add this to the init function at the end
+    setTimeout(() => {
+        console.log('[Jalika] Running delayed startup checks');
+        
+        // Check if we have plants data but none are displayed
+        if (app.plants && app.plants.length > 0) {
+            const plantsContainer = document.querySelector('.plant-pods');
+            if (plantsContainer && plantsContainer.childElementCount === 0) {
+                console.log('[Jalika] Plants data available but not rendered, forcing render');
+                renderPlantPods();
+            }
+        }
+        
+        // Make sure tabs have proper visibility
+        const currentTab = document.querySelector(`.tab-panel.active`);
+        if (currentTab) {
+            console.log(`[Jalika] Current active tab is ${currentTab.id}`);
+            currentTab.style.display = 'block';
+        }
+    }, 1000);
     
     // Initialize the app when the DOM is fully loaded
     document.addEventListener('DOMContentLoaded', init);
