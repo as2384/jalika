@@ -1,0 +1,32 @@
+name: Jalika
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 2 hours
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tuya-connector-python gspread oauth2client requests
+          
+      - name: Run monitoring script
+        env:
+          TUYA_ACCESS_ID: ${{ secrets.TUYA_ACCESS_ID }}
+          TUYA_ACCESS_KEY: ${{ secrets.TUYA_ACCESS_KEY }}
+          TUYA_DEVICE_ID: ${{ secrets.TUYA_DEVICE_ID }}
+          SPREADSHEET_NAME: ${{ secrets.SPREADSHEET_NAME }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: python third_party/tuya/tuya-write-yimnik-to-google-sheets-cloud.py
