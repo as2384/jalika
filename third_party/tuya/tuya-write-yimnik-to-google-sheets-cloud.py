@@ -5,6 +5,7 @@ import socket
 import time
 import os
 import json
+import pytz  # Add this import for time zone handling
 
 from tuya_connector import TuyaOpenAPI
 from oauth2client.service_account import ServiceAccountCredentials
@@ -81,6 +82,7 @@ def get_weather_data(city):
         print(f"Weather API error: {str(e)}")
         return None
 
+# Then in your get_sensor_data function:
 def get_sensor_data():
     """Get data from Tuya water quality sensor"""
     openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
@@ -97,8 +99,9 @@ def get_sensor_data():
     for item in status.get("result", []):
         data[item["code"]] = item["value"]
 
-    # Apply scaling factors based on the device specifications
-    now = datetime.datetime.now()
+    # Get current time in Pacific Time
+    pacific_tz = pytz.timezone('America/Los_Angeles')
+    now = datetime.datetime.now(pytz.utc).astimezone(pacific_tz)
     
     # Apply scaling factors based on the device specifications
     measurements = {
