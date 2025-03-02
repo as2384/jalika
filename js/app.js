@@ -17,14 +17,8 @@
             temp: 22.5,
             lastUpdated: new Date()
         },
-        
-        // Optimal ranges for sensor values
-        optimalRanges: {
-            ph: { min: 5.7, max: 6.3 },
-            tds: { min: 700, max: 1200 },
-            ec: { min: 1700, max: 2300 },
-            temp: { min: 60, max: 75 }
-        },
+
+        optimalRanges: JalikaConfig.optimalRanges,
         
         // Plant data array (will be populated from Google Sheets)
         plants: [],
@@ -206,10 +200,11 @@
         applyValueStatusClass(elements.sensorValues.ec, app.sensorData.ec, app.optimalRanges.ec);
         applyValueStatusClass(elements.sensorValues.temp, app.sensorData.temp, app.optimalRanges.temp);
         
-        // Update graph area with timestamp information
+        // Update graph area with timestamp information - using friendly date format
         if (app.sensorData.lastUpdated) {
+            const formattedTimestamp = JalikaConfig.formatDate(app.sensorData.lastUpdated);
             elements.sensorGraph.innerHTML = `
-                <p class="placeholder-text">Latest measurement from: ${app.sensorData.lastUpdated.toLocaleString()}</p>
+                <p class="placeholder-text">Latest measurement from: ${formattedTimestamp}</p>
                 <p class="placeholder-text">Sensor graph will be implemented soon!</p>
             `;
         } else {
@@ -322,25 +317,17 @@
         // Clear existing classes
         element.classList.remove('warning', 'danger');
         
-        // Calculate how far outside the range we are (as a percentage of the range)
-        const rangeSize = range.max - range.min;
-        const warningThreshold = 0.1; // 10% outside range
-        const dangerThreshold = 0.2; // 20% outside range
+        // Get the status class from the shared config
+        const statusClass = JalikaConfig.getValueStatusClass(value, 
+            // Determine sensor type from range
+            Object.keys(JalikaConfig.optimalRanges).find(key => 
+                JalikaConfig.optimalRanges[key] === range
+            )
+        );
         
-        if (value < range.min) {
-            const deviation = (range.min - value) / rangeSize;
-            if (deviation > dangerThreshold) {
-                element.classList.add('danger');
-            } else if (deviation > warningThreshold) {
-                element.classList.add('warning');
-            }
-        } else if (value > range.max) {
-            const deviation = (value - range.max) / rangeSize;
-            if (deviation > dangerThreshold) {
-                element.classList.add('danger');
-            } else if (deviation > warningThreshold) {
-                element.classList.add('warning');
-            }
+        // Apply the class if one was returned
+        if (statusClass) {
+            element.classList.add(statusClass);
         }
     }
     
@@ -550,11 +537,17 @@
             elements.generalRecommendationsList.appendChild(recElement);
         });
     }
+
+    function formatFriendlyDate(date) {
+        return JalikaConfig.formatDate(date);
+    }
     
     // Update last updated time
     function updateLastUpdatedTime() {
         const now = app.sensorData.lastUpdated;
-        const timeString = now.toLocaleTimeString();
+        if (!now) return;
+        
+        const timeString = JalikaConfig.formatDate(now);
         elements.lastUpdatedTime.textContent = timeString;
     }
     

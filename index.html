@@ -223,30 +223,50 @@
             </button>
         </footer>
     </div>
-    
-    <!-- JavaScript Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    
-    <!-- Jalika App Scripts (order matters) -->
-    <script src="js/image-processor.js"></script>
-    <script src="js/charts.js"></script>
-    <script src="js/data.js"></script>
-    <script src="js/app.js"></script>
-    
-    <!-- Register Service Worker -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registered:', registration);
-                    })
-                    .catch(error => {
-                        console.log('Service Worker registration failed:', error);
-                    });
-            });
-        }
-    </script>
+
+<!-- JavaScript Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+<!-- Font loading script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Create a font loader for Excalifont
+        const fontLoader = new FontFace('Excalifont', 'url("fonts/Excalifont-Regular.woff2")');
+        
+        // Load the font and add it to the document
+        fontLoader.load().then(function(loadedFont) {
+            document.fonts.add(loadedFont);
+            console.log('Excalifont loaded successfully');
+            
+            // Dispatch an event to notify that the font is loaded
+            document.dispatchEvent(new Event('exalifont:loaded'));
+        }).catch(function(error) {
+            console.error('Error loading Excalifont:', error);
+        });
+    });
+</script>
+
+<!-- Jalika App Scripts (order matters) -->
+<script src="js/config.js"></script>
+<script src="js/image-processor.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+
+<!-- Register Service Worker -->
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker registered:', registration);
+                })
+                .catch(error => {
+                    console.log('Service Worker registration failed:', error);
+                });
+        });
+    }
+</script>
     
 </body>
 </html>

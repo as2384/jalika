@@ -446,7 +446,7 @@ const JalikaData = (function() {
         };
     }
     
-    // Process measurement data from sheet - updated for exact column names
+    // Process measurement data from sheet - Updated to use separate date and time columns
     function processMeasurementData(rawData) {
         console.log('[JALIKA] Processing measurement data from raw data');
         
@@ -474,6 +474,12 @@ const JalikaData = (function() {
         // The very latest entry for current values
         const latest = latestMeasurements[latestMeasurements.length - 1] || {};
         
+        // Determine date and time column names
+        const dateColumnName = getColumnName(latest, ['Date', 'Timestamp', 'MeasurementDate']);
+        const timeColumnName = getColumnName(latest, ['Time', 'MeasurementTime']);
+        
+        console.log(`[JALIKA] Using date column: ${dateColumnName}, time column: ${timeColumnName}`);
+        
         // Using the EXACT column names from your Google Sheet
         // Handle specific column names with units in parentheses
         const latestData = {
@@ -481,14 +487,14 @@ const JalikaData = (function() {
             tds: parseFloat(latest['TDS (ppm)'] || 0) || 840,
             ec: parseFloat(latest['EC (µS/cm)'] || 0) || 1.2,
             temp: parseFloat(latest['Water Temperature (°F)'] || 0) || 22.5,
-            timestamp: latest['Timestamp'] || latest['Date'] || new Date().toISOString()
+            timestamp: combineDateAndTime(latest[dateColumnName], latest[timeColumnName])
         };
         
-        console.log('[JALIKA] Processed latest measurement with exact column names:', latestData);
+        console.log('[JALIKA] Processed latest measurement:', latestData);
         
         // Process all entries for history
         const historyData = latestMeasurements.map(row => ({
-            timestamp: row['Timestamp'] || row['Date'] || new Date().toISOString(),
+            timestamp: combineDateAndTime(row[dateColumnName], row[timeColumnName]),
             ph: parseFloat(row['pH'] || 0) || 0,
             tds: parseFloat(row['TDS (ppm)'] || 0) || 0,
             ec: parseFloat(row['EC (µS/cm)'] || 0) || 0,
@@ -499,7 +505,88 @@ const JalikaData = (function() {
             latest: latestData,
             history: historyData
         };
-    }  
+    }
+
+    // Helper function to get column name based on possible options
+    function getColumnName(row, possibleNames) {
+        for (const name of possibleNames) {
+            if (name in row) {
+                return name;
+            }
+        }
+        // Return the first possible name if none found (as a fallback)
+        console.warn(`[JALIKA] Could not find column name from options: ${possibleNames.join(', ')}`);
+        return possibleNames[0];
+    }
+
+    // Helper function to combine date and time values with proper time zone handling
+    function combineDateAndTime(dateValue, timeValue) {
+        try {
+            console.log(`[JALIKA] Processing date: ${dateValue}, time: ${timeValue}`);
+            
+            // If we don't have date, return current timestamp
+            if (!dateValue) {
+                console.warn('[JALIKA] Missing date value, using current timestamp');
+                return new Date().toISOString();
+            }
+            
+            // Parse date from the date column
+            let dateObj;
+            if (typeof dateValue === 'string') {
+                dateObj = new Date(dateValue);
+            } else if (dateValue instanceof Date) {
+                dateObj = new Date(dateValue);
+            } else {
+                console.warn(`[JALIKA] Unexpected date format: ${typeof dateValue}`);
+                return new Date().toISOString();
+            }
+            
+            // Default time components
+            let hours = 0, minutes = 0, seconds = 0;
+            
+            // Extract time components from the time value
+            if (timeValue) {
+                let timeObj;
+                
+                if (typeof timeValue === 'string') {
+                    timeObj = new Date(timeValue);
+                } else if (timeValue instanceof Date) {
+                    timeObj = timeValue;
+                } else {
+                    console.warn(`[JALIKA] Unexpected time format: ${typeof timeValue}`);
+                    return dateObj.toISOString();
+                }
+                
+                // Get the UTC time components
+                hours = timeObj.getUTCHours();     // Should be 18 for 18:28
+                minutes = timeObj.getUTCMinutes(); // Should be 28
+                seconds = timeObj.getUTCSeconds(); // Should be 0
+                
+                console.log(`[JALIKA] Extracted UTC time: ${hours}:${minutes}:${seconds}`);
+                
+                // Apply PT time zone adjustment (-8 hours from UTC)
+                hours = hours - 8;
+                
+                // Handle negative hours (crossing to previous day)
+                if (hours < 0) {
+                    hours += 24;
+                }
+                
+                console.log(`[JALIKA] Adjusted PT time: ${hours}:${minutes}:${seconds}`);
+            }
+            
+            // Set hours, minutes, seconds to the date object
+            dateObj.setHours(hours, minutes, seconds, 0);
+            
+            const result = dateObj.toISOString();
+            console.log(`[JALIKA] Final timestamp: ${result}`);
+            
+            return result;
+        } catch (error) {
+            console.error('[JALIKA] Error processing date/time:', error);
+            return new Date().toISOString();
+        }
+    }
     
     // Generate some variance in the measurement data to simulate change
     function updateMeasurementData(currentData) {

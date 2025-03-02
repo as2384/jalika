@@ -42,6 +42,22 @@
     --font-size-xxl: 32px;
 }
 
+/* Excalifont font-face declaration */
+@font-face {
+    font-family: 'Excalifont';
+    src: url('../fonts/Excalifont-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Chart-specific styles */
+.chart-wrapper .chart-title,
+.chart-wrapper canvas,
+.chart-wrapper .chartjs-tooltip {
+    font-family: 'Excalifont', 'Segoe UI', sans-serif !important;
+}
+
 /* Reset and Base Styles */
 * {
     margin: 0;

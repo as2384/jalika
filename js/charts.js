@@ -2,40 +2,10 @@
 const JalikaCharts = (function() {
     'use strict';
     
-    // Configuration - Soft "baby" colors
+    // Use the shared configuration
     const config = {
-        colors: {
-            ph: {
-                main: '#9DCEFF', // Soft blue
-                line: '#5DADEC',
-                fill: 'rgba(157, 206, 255, 0.2)',
-                bounds: '#5E9BD6'
-            },
-            tds: {
-                main: '#D2B4DE', // Soft purple
-                line: '#C39BD3',
-                fill: 'rgba(210, 180, 222, 0.2)',
-                bounds: '#9B59B6'
-            },
-            ec: {
-                main: '#A8D8B9', // Soft green
-                line: '#82C99D',
-                fill: 'rgba(168, 216, 185, 0.2)',
-                bounds: '#58D68D'
-            },
-            temp: {
-                main: '#FFCBA4', // Soft orange
-                line: '#FFAB76',
-                fill: 'rgba(255, 203, 164, 0.2)',
-                bounds: '#FF8C42'
-            }
-        },
-        optimalRanges: {
-            ph: { min: 5.5, max: 6.5 },
-            tds: { min: 700, max: 1000 },
-            ec: { min: 1.0, max: 1.5 },
-            temp: { min: 65, max: 80 } // Temperature in °F
-        }
+        colors: JalikaConfig.colors,
+        optimalRanges: JalikaConfig.optimalRanges
     };
     
     // Chart instances
@@ -46,12 +16,40 @@ const JalikaCharts = (function() {
         temp: null
     };
     
+    // Initialize chart settings
+    function initializeChartSettings() {
+        // Set global Chart.js defaults for font
+        Chart.defaults.font.family = "'Excalifont', 'Segoe UI', sans-serif";
+        
+        console.log('[Jalika Charts] Chart settings initialized with Excalifont');
+    }
+    
+    // Format dates for display on chart
+    function formatChartDate(dateString) {
+        return JalikaConfig.formatDate(dateString);
+    }
+    
+    // Process data to create segments based on optimal ranges
+    function processDataSegments(data, labels, minValue, maxValue) {
+        // Check if we have data points that are out of range
+        const hasOutOfRangePoints = data.some(value => value < minValue || value > maxValue);
+        
+        // For simplicity, we'll use a point styling approach rather than splitting the data
+        return {
+            hasOutOfRangePoints,
+            isOutOfRange: data.map(value => value < minValue || value > maxValue)
+        };
+    }
+    
     // Create or update all charts
     function updateCharts(measurementData) {
         if (!measurementData || !measurementData.history || !measurementData.history.length) {
             console.warn('[Jalika Charts] No measurement data for charts');
             return;
         }
+        
+        // Initialize chart settings (includes setting Excalifont as default)
+        initializeChartSettings();
         
         console.log('[Jalika Charts] Updating charts with data:', measurementData);
         
@@ -63,6 +61,25 @@ const JalikaCharts = (function() {
         updateTDSChart(measurementData.history);
         updateECChart(measurementData.history);
         updateTempChart(measurementData.history);
+        
+        // Register a Plugin to draw boundary lines after chart renders
+        Chart.register({
+            id: 'boundaryLinesPlugin',
+            afterRender: (chart) => {
+                // Get the chart data
+                const chartType = chart.canvas.id.split('-')[0]; // 'ph', 'tds', 'ec', or 'temp'
+                if (!chartType) return;
+                
+                // Get the corresponding range and color
+                const range = config.optimalRanges[chartType];
+                const color = config.colors[chartType].bounds;
+                
+                if (range && color) {
+                    // Draw the boundary lines
+                    addHorizontalLines(chart.ctx, range, color);
+                }
+            }
+        });
     }
     
     // Make sure we have a container for our charts
@@ -109,17 +126,111 @@ const JalikaCharts = (function() {
             }
         }
     }
-    
-    // Format dates for display on chart
-    function formatChartDate(dateString) {
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        } catch (e) {
-            return dateString;
-        }
+
+    // Draw horizontal lines for min/max boundaries - Using solid lines and improved appearance
+    function addHorizontalLines(ctx, range, color) {
+        // We need to ensure this runs AFTER the chart animation is complete
+        setTimeout(() => {
+            try {
+                // Get the chart instance using Chart.js API
+                const chartInstance = Chart.getChart(ctx.canvas);
+                if (!chartInstance) return;
+                
+                // Wait for chart animation to complete
+                if (chartInstance.animating) {
+                    return setTimeout(() => addHorizontalLines(ctx, range, color), 100);
+                }
+                
+                const yAxis = chartInstance.scales.y;
+                const xAxis = chartInstance.scales.x;
+                
+                if (!yAxis || !xAxis) return;
+                
+                // Make darker versions of the color for the boundary lines
+                const darkerColor = makeColorDarker(color, 30);
+                
+                // Draw min line - solid, thicker and more visible
+                ctx.save();
+                ctx.beginPath();
+                ctx.setLineDash([]); // Solid line (no dash)
+                ctx.lineWidth = 3;  // Thicker line
+                ctx.strokeStyle = darkerColor;
+                ctx.moveTo(xAxis.left, yAxis.getPixelForValue(range.min));
+                ctx.lineTo(xAxis.right, yAxis.getPixelForValue(range.min));
+                ctx.stroke();
+                
+                // Draw max line - solid, thicker and more visible
+                ctx.beginPath();
+                ctx.moveTo(xAxis.left, yAxis.getPixelForValue(range.max));
+                ctx.lineTo(xAxis.right, yAxis.getPixelForValue(range.max));
+                ctx.stroke();
+                
+                // Create semi-transparent fill for the optimal range area
+                ctx.fillStyle = `rgba(${hexToRgb(color).r}, ${hexToRgb(color).g}, ${hexToRgb(color).b}, 0.1)`;
+                ctx.fillRect(
+                    xAxis.left, 
+                    yAxis.getPixelForValue(range.max), 
+                    xAxis.right - xAxis.left, 
+                    yAxis.getPixelForValue(range.min) - yAxis.getPixelForValue(range.max)
+                );
+                
+                // Label min - using Excalifont
+                ctx.fillStyle = darkerColor;
+                ctx.font = "bold 12px 'Excalifont', 'Segoe UI', sans-serif";
+                ctx.fillText('Min', xAxis.left + 10, yAxis.getPixelForValue(range.min) - 7);
+                
+                // Label max - using Excalifont
+                ctx.fillText('Max', xAxis.left + 10, yAxis.getPixelForValue(range.max) + 14);
+                ctx.restore();
+                
+                // Log success
+                console.log(`[Jalika Charts] Added boundary lines for range: ${range.min}-${range.max}`);
+            } catch (e) {
+                console.warn('Could not draw boundary lines:', e);
+            }
+        }, 500); // Increase delay to ensure chart is fully rendered
     }
     
+    // Helper function to make a color darker by a percentage
+    function makeColorDarker(hexColor, percent) {
+        const rgb = hexToRgb(hexColor);
+        // Make the color darker
+        const darker = {
+            r: Math.max(0, Math.floor(rgb.r * (1 - percent/100))),
+            g: Math.max(0, Math.floor(rgb.g * (1 - percent/100))),
+            b: Math.max(0, Math.floor(rgb.b * (1 - percent/100)))
+        };
+        
+        // Convert back to hex
+        return `#${((1 << 24) + (darker.r << 16) + (darker.g << 8) + darker.b).toString(16).slice(1)}`;
+    }
+    
+    // Helper function to convert hex color to RGB components
+    function hexToRgb(hex) {
+        // Default fallback color
+        let r = 0, g = 0, b = 0;
+        
+        try {
+            // Remove # if present
+            hex = hex.replace(/^#/, '');
+            
+            // Parse hex value
+            if (hex.length === 3) {
+                r = parseInt(hex.charAt(0) + hex.charAt(0), 16);
+                g = parseInt(hex.charAt(1) + hex.charAt(1), 16);
+                b = parseInt(hex.charAt(2) + hex.charAt(2), 16);
+            } else if (hex.length === 6) {
+                r = parseInt(hex.substring(0, 2), 16);
+                g = parseInt(hex.substring(2, 4), 16);
+                b = parseInt(hex.substring(4, 6), 16);
+            }
+        } catch (error) {
+            console.warn('Error parsing color hex value:', error);
+        }
+        
+        return { r, g, b };
+    }
+
     // Update pH chart
     function updatePHChart(historyData) {
         // Get data for chart
@@ -134,6 +245,14 @@ const JalikaCharts = (function() {
             charts.ph.destroy();
         }
         
+        // Process data to determine which points are out of range
+        const { isOutOfRange } = processDataSegments(
+            data, 
+            labels, 
+            config.optimalRanges.ph.min, 
+            config.optimalRanges.ph.max
+        );
+        
         // Create or update chart
         charts.ph = new Chart(ctx, {
             type: 'line',
@@ -143,12 +262,40 @@ const JalikaCharts = (function() {
                     {
                         label: 'pH Level',
                         data: data,
-                        borderColor: config.colors.ph.line,
-                        backgroundColor: config.colors.ph.fill,
+                        backgroundColor: function(context) {
+                            const index = context.dataIndex;
+                            return isOutOfRange[index] ? 
+                                config.colors.ph.outOfBounds : 
+                                config.colors.ph.main;
+                        },
+                        borderColor: function(context) {
+                            const index = context.dataIndex;
+                            return isOutOfRange[index] ? 
+                                config.colors.ph.outOfBounds : 
+                                config.colors.ph.line;
+                        },
+                        segment: {
+                            borderColor: function(context) {
+                                // Change line segment color based on the data point values
+                                const p0 = context.p0.parsed.y;
+                                const p1 = context.p1.parsed.y;
+                                const min = config.optimalRanges.ph.min;
+                                const max = config.optimalRanges.ph.max;
+                                
+                                // If either point is out of range, color the segment red
+                                if (p0 < min || p0 > max || p1 < min || p1 > max) {
+                                    return config.colors.ph.outOfBounds;
+                                }
+                                return config.colors.ph.line;
+                            }
+                        },
+                        borderWidth: 2,
+                        pointRadius: 4,
                         tension: 0.3,
-                        fill: true,
-                        pointRadius: 3,
-                        borderWidth: 2
+                        fill: {
+                            target: 'origin',
+                            above: config.colors.ph.fill
+                        }
                     }
                 ]
             },
@@ -156,34 +303,6 @@ const JalikaCharts = (function() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    annotation: {
-                        annotations: {
-                            minLine: {
-                                type: 'line',
-                                yMin: config.optimalRanges.ph.min,
-                                yMax: config.optimalRanges.ph.min,
-                                borderColor: config.colors.ph.bounds,
-                                borderWidth: 1,
-                                borderDash: [5, 5],
-                                label: {
-                                    content: 'Min',
-                                    enabled: true
-                                }
-                            },
-                            maxLine: {
-                                type: 'line',
-                                yMin: config.optimalRanges.ph.max,
-                                yMax: config.optimalRanges.ph.max,
-                                borderColor: config.colors.ph.bounds,
-                                borderWidth: 1,
-                                borderDash: [5, 5],
-                                label: {
-                                    content: 'Max',
-                                    enabled: true
-                                }
-                            }
-                        }
-                    },
                     legend: {
                         display: false
                     },
@@ -191,6 +310,14 @@ const JalikaCharts = (function() {
                         callbacks: {
                             title: function(tooltipItems) {
                                 return formatChartDate(tooltipItems[0].label);
+                            },
+                            labelColor: function(context) {
+                                const index = context.dataIndex;
+                                return {
+                                    backgroundColor: isOutOfRange[index] ? 
+                                        config.colors.ph.outOfBounds : 
+                                        config.colors.ph.line
+                                };
                             }
                         }
                     }
@@ -201,7 +328,10 @@ const JalikaCharts = (function() {
                         max: Math.max(config.optimalRanges.ph.max * 1.1, Math.max(...data) * 1.1),
                         title: {
                             display: true,
-                            text: 'pH'
+                            text: 'pH',
+                            font: {
+                                family: "'Excalifont', 'Segoe UI', sans-serif"
+                            }
                         },
                         grid: {
                             color: 'rgba(200, 200, 200, 0.2)'
@@ -210,7 +340,10 @@ const JalikaCharts = (function() {
                     x: {
                         title: {
                             display: true,
-                            text: 'Time'
+                            text: 'Time',
+                            font: {
+                                family: "'Excalifont', 'Segoe UI', sans-serif"
+                            }
                         },
                         ticks: {
                             maxRotation: 45,
@@ -220,12 +353,148 @@ const JalikaCharts = (function() {
                             display: false
                         }
                     }
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
+                    }
                 }
             }
         });
+    }
+
+    // Similar chart update functions for TDS, EC, and Temperature would be here
+    // They follow the same pattern as updatePHChart but with their specific sensor types
+    // Update pH chart
+    function updatePHChart(historyData) {
+        // Get data for chart
+        const labels = historyData.map(d => formatChartDate(d.timestamp));
+        const data = historyData.map(d => d.ph);
         
-        // Add horizontal lines for min/max levels
-        addHorizontalLines(ctx, config.optimalRanges.ph, config.colors.ph.bounds);
+        // Get chart canvas
+        const ctx = document.getElementById('ph-chart').getContext('2d');
+        
+        // Destroy existing chart if exists
+        if (charts.ph) {
+            charts.ph.destroy();
+        }
+        
+        // Process data to determine which points are out of range
+        const { isOutOfRange } = processDataSegments(
+            data, 
+            labels, 
+            config.optimalRanges.ph.min, 
+            config.optimalRanges.ph.max
+        );
+        
+        // Create or update chart
+        charts.ph = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'pH Level',
+                        data: data,
+                        backgroundColor: function(context) {
+                            const index = context.dataIndex;
+                            return isOutOfRange[index] ? 
+                                config.colors.ph.outOfBounds : 
+                                config.colors.ph.main;
+                        },
+                        borderColor: function(context) {
+                            const index = context.dataIndex;
+                            return isOutOfRange[index] ? 
+                                config.colors.ph.outOfBounds : 
+                                config.colors.ph.line;
+                        },
+                        segment: {
+                            borderColor: function(context) {
+                                // Change line segment color based on the data point values
+                                const p0 = context.p0.parsed.y;
+                                const p1 = context.p1.parsed.y;
+                                const min = config.optimalRanges.ph.min;
+                                const max = config.optimalRanges.ph.max;
+                                
+                                // If either point is out of range, color the segment red
+                                if (p0 < min || p0 > max || p1 < min || p1 > max) {
+                                    return config.colors.ph.outOfBounds;
+                                }
+                                return config.colors.ph.line;
+                            }
+                        },
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        tension: 0.3,
+                        fill: {
+                            target: 'origin',
+                            above: config.colors.ph.fill
+                        }
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                return formatChartDate(tooltipItems[0].label);
+                            },
+                            labelColor: function(context) {
+                                const index = context.dataIndex;
+                                return {
+                                    backgroundColor: isOutOfRange[index] ? 
+                                        config.colors.ph.outOfBounds : 
+                                        config.colors.ph.line
+                                };
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: Math.min(config.optimalRanges.ph.min * 0.9, Math.min(...data) * 0.9),
+                        max: Math.max(config.optimalRanges.ph.max * 1.1, Math.max(...data) * 1.1),
+                        title: {
+                            display: true,
+                            text: 'pH',
+                            font: {
+                                family: "'Excalifont', 'Segoe UI', sans-serif"
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(200, 200, 200, 0.2)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time',
+                            font: {
+                                family: "'Excalifont', 'Segoe UI', sans-serif"
+                            }
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
+                    }
+                }
+            }
+        });
     }
     
     // Update TDS chart
@@ -242,6 +511,14 @@ const JalikaCharts = (function() {
             charts.tds.destroy();
         }
         
+        // Process data to determine which points are out of range
+        const { isOutOfRange } = processDataSegments(
+            data, 
+            labels, 
+            config.optimalRanges.tds.min, 
+            config.optimalRanges.tds.max
+        );
+        
         // Create or update chart
         charts.tds = new Chart(ctx, {
             type: 'line',
@@ -251,12 +528,40 @@ const JalikaCharts = (function() {
                     {
                         label: 'TDS (ppm)',
                         data: data,
-                        borderColor: config.colors.tds.line,
-                        backgroundColor: config.colors.tds.fill,
+                        backgroundColor: function(context) {
+                            const index = context.dataIndex;
+                            return isOutOfRange[index] ? 
+                                config.colors.tds.outOfBounds : 
+                                config.colors.tds.main;
+                        },
+                        borderColor: function(context) {
+                            const index = context.dataIndex;
+                            return isOutOfRange[index] ? 
+                                config.colors.tds.outOfBounds : 
+                                config.colors.tds.line;
+                        },
+                        segment: {
+                            borderColor: function(context) {
+                                // Change line segment color based on the data point values
+                                const p0 = context.p0.parsed.y;
+                                const p1 = context.p1.parsed.y;
+                                const min = config.optimalRanges.tds.min;
+                                const max = config.optimalRanges.tds.max;
+                                
+                                // If either point is out of range, color the segment red
+                                if (p0 < min || p0 > max || p1 < min || p1 > max) {
+                                    return config.colors.tds.outOfBounds;
+                                }
+                                return config.colors.tds.line;
+                            }
+                        },
+                        borderWidth: 2,
+                        pointRadius: 4,
                         tension: 0.3,
-                        fill: true,
-                        pointRadius: 3,
-                        borderWidth: 2
+                        fill: {
+                            target: 'origin',
+                            above: config.colors.tds.fill
+                        }
                     }
                 ]
             },
@@ -271,6 +576,14 @@ const JalikaCharts = (function() {
                         callbacks: {
                             title: function(tooltipItems) {
                                 return formatChartDate(tooltipItems[0].label);
+                            },
+                            labelColor: function(context) {
+                                const index = context.dataIndex;
+                                return {
+                                    backgroundColor: isOutOfRange[index] ? 
+                                        config.colors.tds.outOfBounds : 
+                                        config.colors.tds.line
+                                };
                             }
                         }
                     }
@@ -281,7 +594,10 @@ const JalikaCharts = (function() {
                         max: Math.max(config.optimalRanges.tds.max * 1.1, Math.max(...data) * 1.1),
                         title: {
                             display: true,
-                            text: 'TDS (ppm)'
+                            text: 'TDS (ppm)',
+                            font: {
+                                family: "'Excalifont', 'Segoe UI', sans-serif"
+                            }
                         },
                         grid: {
                             color: 'rgba(200, 200, 200, 0.2)'
@@ -290,7 +606,10 @@ const JalikaCharts = (function() {
                     x: {
                         title: {
                             display: true,
-                            text: 'Time'
+                            text: 'Time',
+                            font: {
+                                family: "'Excalifont', 'Segoe UI', sans-serif"
+                            }
                         },
                         ticks: {
                             maxRotation: 45,
@@ -300,12 +619,14 @@ const JalikaCharts = (function() {
                             display: false
                         }
                     }
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
+                    }
                 }
             }
         });
-        
-        // Add horizontal lines for min/max levels
-        addHorizontalLines(ctx, config.optimalRanges.tds, config.colors.tds.bounds);
     }
     
     // Update EC chart
@@ -322,6 +643,14 @@ const JalikaCharts = (function() {
             charts.ec.destroy();
         }
         
+        // Process data to determine which points are out of range
+        const { isOutOfRange } = processDataSegments(
+            data, 
+            labels, 
+            config.optimalRanges.ec.min, 
+            config.optimalRanges.ec.max
+        );
+        
         // Create or update chart
         charts.ec = new Chart(ctx, {
             type: 'line',
@@ -331,12 +660,40 @@ const JalikaCharts = (function() {
                     {
                         label: 'EC (µS/cm)',
                         data: data,
-                        borderColor: config.colors.ec.line,
-                        backgroundColor: config.colors.ec.fill,
+                        backgroundColor: function(context) {
+                            const index = context.dataIndex;
+                            return isOutOfRange[index] ? 
+                                config.colors.ec.outOfBounds : 
+                                config.colors.ec.main;
+                        },
+                        borderColor: function(context) {
+                            const index = context.dataIndex;
+                            return isOutOfRange[index] ? 
+                                config.colors.ec.outOfBounds : 
+                                config.colors.ec.line;
+                        },
+                        segment: {
+                            borderColor: function(context) {
+                                // Change line segment color based on the data point values
+                                const p0 = context.p0.parsed.y;
+                                const p1 = context.p1.parsed.y;
+                                const min = config.optimalRanges.ec.min;
+                                const max = config.optimalRanges.ec.max;
+                                
+                                // If either point is out of range, color the segment red
+                                if (p0 < min || p0 > max || p1 < min || p1 > max) {
+                                    return config.colors.ec.outOfBounds;
+                                }
+                                return config.colors.ec.line;
+                            }
+                        },
+                        borderWidth: 2,
+                        pointRadius: 4,
                         tension: 0.3,
-                        fill: true,
-                        pointRadius: 3,
-                        borderWidth: 2
+                        fill: {
+                            target: 'origin',
+                            above: config.colors.ec.fill
+                        }
                     }
                 ]
             },
@@ -351,6 +708,14 @@ const JalikaCharts = (function() {
                         callbacks: {
                             title: function(tooltipItems) {
                                 return formatChartDate(tooltipItems[0].label);
+                            },
+                            labelColor: function(context) {
+                                const index = context.dataIndex;
+                                return {
+                                    backgroundColor: isOutOfRange[index] ? 
+                                        config.colors.ec.outOfBounds : 
+                                        config.colors.ec.line
+                                };
                             }
                         }
                     }
@@ -361,7 +726,10 @@ const JalikaCharts = (function() {
                         max: Math.max(config.optimalRanges.ec.max * 1.1, Math.max(...data) * 1.1),
                         title: {
                             display: true,
-                            text: 'EC (µS/cm)'
+                            text: 'EC (µS/cm)',
+                            font: {
+                                family: "'Excalifont', 'Segoe UI', sans-serif"
+                            }
                         },
                         grid: {
                             color: 'rgba(200, 200, 200, 0.2)'
@@ -370,7 +738,10 @@ const JalikaCharts = (function() {
                     x: {
                         title: {
                             display: true,
-                            text: 'Time'
+                            text: 'Time',
+                            font: {
+                                family: "'Excalifont', 'Segoe UI', sans-serif"
+                            }
                         },
                         ticks: {
                             maxRotation: 45,
@@ -380,12 +751,14 @@ const JalikaCharts = (function() {
                             display: false
                         }
                     }
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
+                    }
                 }
             }
         });
-        
-        // Add horizontal lines for min/max levels
-        addHorizontalLines(ctx, config.optimalRanges.ec, config.colors.ec.bounds);
     }
     
     // Update Temperature chart
@@ -402,6 +775,14 @@ const JalikaCharts = (function() {
             charts.temp.destroy();
         }
         
+        // Process data to determine which points are out of range
+        const { isOutOfRange } = processDataSegments(
+            data, 
+            labels, 
+            config.optimalRanges.temp.min, 
+            config.optimalRanges.temp.max
+        );
+        
         // Create or update chart
         charts.temp = new Chart(ctx, {
             type: 'line',
@@ -411,12 +792,40 @@ const JalikaCharts = (function() {
                     {
                         label: 'Temperature (°F)',
                         data: data,
-                        borderColor: config.colors.temp.line,
-                        backgroundColor: config.colors.temp.fill,
+                        backgroundColor: function(context) {
+                            const index = context.dataIndex;
+                            return isOutOfRange[index] ? 
+                                config.colors.temp.outOfBounds : 
+                                config.colors.temp.main;
+                        },
+                        borderColor: function(context) {
+                            const index = context.dataIndex;
+                            return isOutOfRange[index] ? 
+                                config.colors.temp.outOfBounds : 
+                                config.colors.temp.line;
+                        },
+                        segment: {
+                            borderColor: function(context) {
+                                // Change line segment color based on the data point values
+                                const p0 = context.p0.parsed.y;
+                                const p1 = context.p1.parsed.y;
+                                const min = config.optimalRanges.temp.min;
+                                const max = config.optimalRanges.temp.max;
+                                
+                                // If either point is out of range, color the segment red
+                                if (p0 < min || p0 > max || p1 < min || p1 > max) {
+                                    return config.colors.temp.outOfBounds;
+                                }
+                                return config.colors.temp.line;
+                            }
+                        },
+                        borderWidth: 2,
+                        pointRadius: 4,
                         tension: 0.3,
-                        fill: true,
-                        pointRadius: 3,
-                        borderWidth: 2
+                        fill: {
+                            target: 'origin',
+                            above: config.colors.temp.fill
+                        }
                     }
                 ]
             },
@@ -431,6 +840,14 @@ const JalikaCharts = (function() {
                         callbacks: {
                             title: function(tooltipItems) {
                                 return formatChartDate(tooltipItems[0].label);
+                            },
+                            labelColor: function(context) {
+                                const index = context.dataIndex;
+                                return {
+                                    backgroundColor: isOutOfRange[index] ? 
+                                        config.colors.temp.outOfBounds : 
+                                        config.colors.temp.line
+                                };
                             }
                         }
                     }
@@ -441,7 +858,10 @@ const JalikaCharts = (function() {
                         max: Math.max(config.optimalRanges.temp.max * 1.1, Math.max(...data) * 1.1),
                         title: {
                             display: true,
-                            text: 'Temperature (°F)'
+                            text: 'Temperature (°F)',
+                            font: {
+                                family: "'Excalifont', 'Segoe UI', sans-serif"
+                            }
                         },
                         grid: {
                             color: 'rgba(200, 200, 200, 0.2)'
@@ -450,7 +870,10 @@ const JalikaCharts = (function() {
                     x: {
                         title: {
                             display: true,
-                            text: 'Time'
+                            text: 'Time',
+                            font: {
+                                family: "'Excalifont', 'Segoe UI', sans-serif"
+                            }
                         },
                         ticks: {
                             maxRotation: 45,
@@ -460,59 +883,23 @@ const JalikaCharts = (function() {
                             display: false
                         }
                     }
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
+                    }
                 }
             }
         });
-        
-        // Add horizontal lines for min/max levels
-        addHorizontalLines(ctx, config.optimalRanges.temp, config.colors.temp.bounds);
     }
-    
-    // Draw horizontal lines for min/max boundaries
-    function addHorizontalLines(ctx, range, color) {
-        // Draw after the chart renders
-        setTimeout(() => {
-            try {
-                const chart = ctx.canvas.chart;
-                if (!chart) return;
-                
-                const yAxis = chart.scales.y;
-                const xAxis = chart.scales.x;
-                
-                // Draw min line
-                ctx.save();
-                ctx.beginPath();
-                ctx.setLineDash([5, 5]);
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = color;
-                ctx.moveTo(xAxis.left, yAxis.getPixelForValue(range.min));
-                ctx.lineTo(xAxis.right, yAxis.getPixelForValue(range.min));
-                ctx.stroke();
-                
-                // Draw max line
-                ctx.beginPath();
-                ctx.moveTo(xAxis.left, yAxis.getPixelForValue(range.max));
-                ctx.lineTo(xAxis.right, yAxis.getPixelForValue(range.max));
-                ctx.stroke();
-                ctx.restore();
-                
-                // Label min
-                ctx.save();
-                ctx.fillStyle = color;
-                ctx.font = '10px Arial';
-                ctx.fillText('Min', xAxis.left + 5, yAxis.getPixelForValue(range.min) - 5);
-                
-                // Label max
-                ctx.fillText('Max', xAxis.left + 5, yAxis.getPixelForValue(range.max) - 5);
-                ctx.restore();
-            } catch (e) {
-                console.warn('Could not draw boundary lines:', e);
-            }
-        }, 100);
-    }
-    
+
     // Public API
     return {
-        updateCharts
+        updateCharts,
+        formatChartDate,
+        // Expose the configuration for use elsewhere
+        getConfig: function() {
+            return config;
+        }
     };
 })();
