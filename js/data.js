@@ -406,24 +406,62 @@ const JalikaData = (function() {
     function processPlantData(rawData) {
         console.log('[Jalika] Processing plant data:', rawData);
         
-        return rawData.slice(0, 18).map((row, index) => {
+        // Log all available column names from the first row
+        if (rawData && rawData.length > 0) {
+            console.log('[Jalika] Available column names:', Object.keys(rawData[0]).join(', '));
+        }
+        
+        return rawData.map((row, index) => {
+            // Create a case-insensitive way to find fields regardless of exact capitalization/spacing
+            const findField = (possibleNames) => {
+                for (const name of possibleNames) {
+                    // Try exact match first
+                    if (row[name] !== undefined) return row[name];
+                    
+                    // Try case-insensitive match
+                    const lowerName = name.toLowerCase();
+                    const matchingKey = Object.keys(row).find(key => key.toLowerCase() === lowerName);
+                    if (matchingKey) return row[matchingKey];
+                }
+                return 'N/A';
+            };
+            
+            // Debug log the current row
+            console.log(`[Jalika] Processing row ${index + 1}:`, row);
+            
+            // Get field values using our helper function
+            const podNumber = findField(['Pod No.', 'Pod No', 'PodNo', 'Pod Number', 'PodNumber', 'Pod']) || index + 1;
+            const name = findField(['Specimen', 'Plant Name', 'PlantName', 'Plant']) || 'Unknown Plant';
+            const category = findField(['Category', 'Plant Category', 'PlantCategory', 'Type']);
+            const brand = findField(['Brand', 'Plant Brand', 'PlantBrand']);
+            
+            // Get date planted and preserve the original format for parsing later
+            const datePlanted = findField(['Date Planted', 'DatePlanted', 'Plant Date', 'PlantDate', 'Date']);
+            
+            const growingCrop = findField(['Growing Crop', 'GrowingCrop', 'Crop', 'Plant Type']);
+            
+            // Log the extracted values for debugging
+            console.log(`[Jalika] Extracted values for row ${index + 1}:`, { 
+                podNumber, name, category, brand, datePlanted, growingCrop 
+            });
+            
             // Assign plant data based on the Layout - GC1 sheet structure
             return {
                 id: index + 1,
-                podNumber: row["Pod No."] || row.PodNumber || row.Pod || index + 1,
-                name: row.Specimen || row.PlantName || row.Plant || 'Unknown Plant',
+                podNumber: podNumber,
+                name: name,
                 customName: row.CustomName || plantNameGenerator.generate(),
-                category: row.Category || 'N/A',
-                brand: row.Brand || 'N/A',
-                datePlanted: row["Date Planted"] || 'N/A',
-                growingCrop: row["Growing Crop"] || 'N/A',
-                type: row.Category || row.PlantType || row.Type || 'Unknown',
+                category: category,
+                brand: brand,
+                datePlanted: datePlanted,
+                growingCrop: growingCrop,
+                type: category || findField(['Type', 'PlantType']) || 'Unknown',
                 image: 'img/plants/placeholder.svg', // Default image path
                 cartoonImage: 'img/plants/placeholder.svg', // Will be replaced with cartoonized version
-                catchPhrase: row.CatchPhrase || getCatchphraseForPlant(row.Specimen || row.PlantName || row.Plant || 'Unknown Plant'),
-                growthStage: row.GrowthStage || row.Stage || 'Vegetative',
-                healthStatus: row.HealthStatus || row.Health || 'Good',
-                daysInSystem: calculateDaysInSystem(row["Date Planted"]),
+                catchPhrase: row.CatchPhrase || getCatchphraseForPlant(name),
+                growthStage: findField(['Growth Stage', 'GrowthStage', 'Stage']) || 'Vegetative',
+                healthStatus: findField(['Health Status', 'HealthStatus', 'Health']) || 'Good',
+                daysInSystem: calculateDaysInSystem(datePlanted),
                 issues: row.Issues ? [row.Issues] : []
             };
         });
@@ -431,20 +469,56 @@ const JalikaData = (function() {
 
     // Helper function to calculate days in system from date planted
     function calculateDaysInSystem(datePlantedStr) {
-        if (!datePlantedStr) return Math.floor(Math.random() * 30);
+        if (!datePlantedStr || datePlantedStr === 'N/A') {
+            return Math.floor(Math.random() * 30);
+        }
         
         try {
-            const datePlanted = new Date(datePlantedStr);
+            console.log('[Jalika] Calculating days from date:', datePlantedStr);
+            
+            // Try to parse the date using various formats
+            let datePlanted;
+            
+            // Check if it's already a Date object
+            if (datePlantedStr instanceof Date) {
+                datePlanted = datePlantedStr;
+            } 
+            // Handle different string formats
+            else if (typeof datePlantedStr === 'string') {
+                // Try standard date parsing first
+                datePlanted = new Date(datePlantedStr);
+                
+                // If that fails, try handling MM/DD/YY format
+                if (isNaN(datePlanted.getTime())) {
+                    const parts = datePlantedStr.split(/[\/\-]/);
+                    if (parts.length === 3) {
+                        // Assuming MM/DD/YY format
+                        let year = parseInt(parts[2]);
+                        // Fix two-digit years
+                        if (year < 100) {
+                            year += year < 50 ? 2000 : 1900;
+                        }
+                        // Note: months are 0-indexed in JavaScript Date
+                        datePlanted = new Date(year, parseInt(parts[0]) - 1, parseInt(parts[1]));
+                    }
+                }
+            }
+            
+            // If we couldn't parse the date, return random days
             if (isNaN(datePlanted.getTime())) {
+                console.warn('[Jalika] Failed to parse date:', datePlantedStr);
                 return Math.floor(Math.random() * 30);
             }
             
+            // Calculate days difference
             const today = new Date();
             const diffTime = Math.abs(today - datePlanted);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            console.log('[Jalika] Date parsed successfully. Days in system:', diffDays);
             return diffDays;
         } catch (error) {
-            console.warn('[Jalika] Could not calculate days in system:', error);
+            console.warn('[Jalika] Error calculating days in system:', error);
             return Math.floor(Math.random() * 30);
         }
     }

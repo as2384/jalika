@@ -407,7 +407,24 @@
         
         if (datePlantedElement) {
             console.log('[Jalika] Updating date planted element');
-            datePlantedElement.textContent = plant.datePlanted || 'N/A';
+            // Format the date if it exists
+            if (plant.datePlanted && plant.datePlanted !== 'N/A') {
+                try {
+                    const date = new Date(plant.datePlanted);
+                    if (!isNaN(date.getTime())) {
+                        // Use the medium format (MMM D, YYYY) from JalikaConfig
+                        const formattedDate = JalikaConfig.formatDate(date, JalikaConfig.formats.dateTime.medium);
+                        datePlantedElement.textContent = formattedDate;
+                    } else {
+                        datePlantedElement.textContent = plant.datePlanted;
+                    }
+                } catch (error) {
+                    console.warn('[Jalika] Error formatting date:', error);
+                    datePlantedElement.textContent = plant.datePlanted;
+                }
+            } else {
+                datePlantedElement.textContent = plant.datePlanted || 'N/A';
+            }
         } else {
             console.warn('[Jalika] Date planted element not found in DOM');
         }
