@@ -89,6 +89,9 @@
         // Set up event listeners
         setupEventListeners();
         
+        // Ensure the modal has all required elements
+        ensureModalElements();
+        
         // Listen for data updates from the JalikaData module
         document.addEventListener('jalika:dataUpdated', handleDataUpdate);
         
@@ -361,6 +364,9 @@
     
     // Show plant details in modal
     function showPlantDetails(plant) {
+        // Log the plant object for debugging
+        console.log('[Jalika] Showing details for plant:', plant);
+        
         // Display plant name with custom name in parentheses if available
         if (plant.customName) {
             elements.modalPlantName.textContent = `${plant.name} (${plant.customName})`;
@@ -371,6 +377,49 @@
         elements.modalPodNumber.textContent = `Pod #${plant.podNumber}`;
         elements.modalPlantCartoon.src = plant.cartoonImage;
         elements.modalCatchPhrase.textContent = `"${plant.catchPhrase}"`;
+        
+        // Log the plant data we want to display
+        console.log('[Jalika] Plant category:', plant.category);
+        console.log('[Jalika] Plant brand:', plant.brand);
+        console.log('[Jalika] Plant date planted:', plant.datePlanted);
+        console.log('[Jalika] Plant growing crop:', plant.growingCrop);
+        
+        // Get fresh references to the DOM elements
+        const categoryElement = document.getElementById('modal-category');
+        const brandElement = document.getElementById('modal-brand');
+        const datePlantedElement = document.getElementById('modal-date-planted');
+        const growingCropElement = document.getElementById('modal-growing-crop');
+        
+        // Check if elements exist and update them
+        if (categoryElement) {
+            console.log('[Jalika] Updating category element');
+            categoryElement.textContent = plant.category || 'N/A';
+        } else {
+            console.warn('[Jalika] Category element not found in DOM');
+        }
+        
+        if (brandElement) {
+            console.log('[Jalika] Updating brand element');
+            brandElement.textContent = plant.brand || 'N/A';
+        } else {
+            console.warn('[Jalika] Brand element not found in DOM');
+        }
+        
+        if (datePlantedElement) {
+            console.log('[Jalika] Updating date planted element');
+            datePlantedElement.textContent = plant.datePlanted || 'N/A';
+        } else {
+            console.warn('[Jalika] Date planted element not found in DOM');
+        }
+        
+        if (growingCropElement) {
+            console.log('[Jalika] Updating growing crop element');
+            growingCropElement.textContent = plant.growingCrop || 'N/A';
+        } else {
+            console.warn('[Jalika] Growing crop element not found in DOM');
+        }
+        
+        // Existing plant health information
         elements.modalGrowthStage.textContent = plant.growthStage;
         elements.modalHealthStatus.textContent = plant.healthStatus;
         elements.modalDays.textContent = plant.daysInSystem;
@@ -400,6 +449,91 @@
         
         // Store current plant ID for edit functionality
         elements.plantDetailModal.setAttribute('data-current-plant-id', plant.id);
+    }
+
+    // This will create the missing modal elements if they don't exist
+    function ensureModalElements() {
+        console.log('[Jalika] Ensuring plant detail modal elements exist...');
+        
+        // Check if we need to modify the modal
+        const modalContent = document.querySelector('.plant-detail-modal .modal-content');
+        if (!modalContent) {
+            console.warn('[Jalika] Modal content not found');
+            return;
+        }
+        
+        // Check if the elements already exist
+        const existingCategory = document.getElementById('modal-category');
+        if (existingCategory) {
+            console.log('[Jalika] Plant info elements already exist');
+            return;
+        }
+        
+        console.log('[Jalika] Creating plant info elements');
+        
+        // Find where to insert the new section
+        const plantCatchPhrase = document.getElementById('modal-catch-phrase');
+        if (!plantCatchPhrase) {
+            console.warn('[Jalika] Could not find catch phrase element');
+            return;
+        }
+        
+        // Create the new plant information section
+        const plantInfoSection = document.createElement('div');
+        plantInfoSection.className = 'plant-stats';
+        plantInfoSection.innerHTML = `
+            <h4>Plant Information</h4>
+            <div class="stat-item">
+                <div class="stat-label">Category</div>
+                <div class="stat-value" id="modal-category">N/A</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Brand</div>
+                <div class="stat-value" id="modal-brand">N/A</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Date Planted</div>
+                <div class="stat-value" id="modal-date-planted">N/A</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Growing Crop</div>
+                <div class="stat-value" id="modal-growing-crop">N/A</div>
+            </div>
+        `;
+        
+        // Insert the plant info section after the catch phrase
+        plantCatchPhrase.parentNode.insertBefore(plantInfoSection, plantCatchPhrase.nextSibling);
+        
+        // Verify elements were created
+        const categoryElement = document.getElementById('modal-category');
+        if (categoryElement) {
+            console.log('[Jalika] Successfully created category element');
+        } else {
+            console.warn('[Jalika] Failed to create category element');
+        }
+        
+        const brandElement = document.getElementById('modal-brand');
+        if (brandElement) {
+            console.log('[Jalika] Successfully created brand element');
+        } else {
+            console.warn('[Jalika] Failed to create brand element');
+        }
+        
+        const datePlantedElement = document.getElementById('modal-date-planted');
+        if (datePlantedElement) {
+            console.log('[Jalika] Successfully created date planted element');
+        } else {
+            console.warn('[Jalika] Failed to create date planted element');
+        }
+        
+        const growingCropElement = document.getElementById('modal-growing-crop');
+        if (growingCropElement) {
+            console.log('[Jalika] Successfully created growing crop element');
+        } else {
+            console.warn('[Jalika] Failed to create growing crop element');
+        }
+        
+        console.log('[Jalika] Plant detail modal elements created successfully!');
     }
     
     // Handle image upload

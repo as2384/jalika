@@ -289,6 +289,7 @@ const JalikaData = (function() {
             updateDataTables(plantsData.data, measurementsData.data);
             
             // Return the combined data
+            JalikaData.plants_debug = processPlantData(plantsData.data)
             return {
                 plants: processPlantData(plantsData.data),
                 measurements: processMeasurementData(measurementsData.data),
@@ -403,23 +404,49 @@ const JalikaData = (function() {
     
     // Process plant data from sheet into app format
     function processPlantData(rawData) {
-        return rawData.map((row, index) => {
-            // Assign plant data based on your sheet structure
+        console.log('[Jalika] Processing plant data:', rawData);
+        
+        return rawData.slice(0, 18).map((row, index) => {
+            // Assign plant data based on the Layout - GC1 sheet structure
             return {
                 id: index + 1,
-                podNumber: row.PodNumber || row.Pod || index + 1,
-                name: row.PlantName || row.Plant || 'Unknown Plant',
+                podNumber: row["Pod No."] || row.PodNumber || row.Pod || index + 1,
+                name: row.Specimen || row.PlantName || row.Plant || 'Unknown Plant',
                 customName: row.CustomName || plantNameGenerator.generate(),
-                type: row.PlantType || row.Type || 'Unknown',
+                category: row.Category || 'N/A',
+                brand: row.Brand || 'N/A',
+                datePlanted: row["Date Planted"] || 'N/A',
+                growingCrop: row["Growing Crop"] || 'N/A',
+                type: row.Category || row.PlantType || row.Type || 'Unknown',
                 image: 'img/plants/placeholder.svg', // Default image path
                 cartoonImage: 'img/plants/placeholder.svg', // Will be replaced with cartoonized version
-                catchPhrase: row.CatchPhrase || getCatchphraseForPlant(row.PlantName || row.Plant || 'Unknown Plant'),
+                catchPhrase: row.CatchPhrase || getCatchphraseForPlant(row.Specimen || row.PlantName || row.Plant || 'Unknown Plant'),
                 growthStage: row.GrowthStage || row.Stage || 'Vegetative',
                 healthStatus: row.HealthStatus || row.Health || 'Good',
-                daysInSystem: row.DaysInSystem || row.Days || Math.floor(Math.random() * 30),
+                daysInSystem: calculateDaysInSystem(row["Date Planted"]),
                 issues: row.Issues ? [row.Issues] : []
             };
         });
+    }
+
+    // Helper function to calculate days in system from date planted
+    function calculateDaysInSystem(datePlantedStr) {
+        if (!datePlantedStr) return Math.floor(Math.random() * 30);
+        
+        try {
+            const datePlanted = new Date(datePlantedStr);
+            if (isNaN(datePlanted.getTime())) {
+                return Math.floor(Math.random() * 30);
+            }
+            
+            const today = new Date();
+            const diffTime = Math.abs(today - datePlanted);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        } catch (error) {
+            console.warn('[Jalika] Could not calculate days in system:', error);
+            return Math.floor(Math.random() * 30);
+        }
     }
     
     // Generate measurement data for the app

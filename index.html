@@ -109,55 +109,78 @@
                     </div>
                     
                     <!-- Plant Detail Modal (Hidden by default) -->
-                    <div class="plant-detail-modal" id="plant-detail-modal">
-                        <div class="modal-content">
-                            <span class="close-modal">&times;</span>
-                            <div class="plant-detail-header">
-                                <h3 id="modal-plant-name">Plant Name</h3>
-                                <div id="modal-pod-number" class="modal-pod-badge">Pod #1</div>
+                <!-- Plant Detail Modal (Hidden by default) -->
+                <div class="plant-detail-modal" id="plant-detail-modal">
+                    <div class="modal-content">
+                        <span class="close-modal">&times;</span>
+                        <div class="plant-detail-header">
+                            <h3 id="modal-plant-name">Plant Name</h3>
+                            <div id="modal-pod-number" class="modal-pod-badge">Pod #1</div>
+                        </div>
+                        
+                        <div class="plant-cartoon-container">
+                            <img id="modal-plant-cartoon" src="img/plants/placeholder.svg" alt="Plant Cartoon">
+                        </div>
+                        
+                        <div class="plant-catch-phrase" id="modal-catch-phrase">
+                            "I'm growing strong and healthy!"
+                        </div>
+                        
+                        <!-- New Plant Information Section -->
+                        <div class="plant-stats">
+                            <h4>Plant Information</h4>
+                            <div class="stat-item">
+                                <div class="stat-label">Category</div>
+                                <div class="stat-value" id="modal-category">N/A</div>
                             </div>
-                            
-                            <div class="plant-cartoon-container">
-                                <img id="modal-plant-cartoon" src="img/plants/placeholder.svg" alt="Plant Cartoon">
+                            <div class="stat-item">
+                                <div class="stat-label">Brand</div>
+                                <div class="stat-value" id="modal-brand">N/A</div>
                             </div>
-                            
-                            <div class="plant-catch-phrase" id="modal-catch-phrase">
-                                "I'm growing strong and healthy!"
+                            <div class="stat-item">
+                                <div class="stat-label">Date Planted</div>
+                                <div class="stat-value" id="modal-date-planted">N/A</div>
                             </div>
-                            
-                            <div class="plant-stats">
-                                <h4>Plant Health</h4>
-                                <div class="stat-item">
-                                    <div class="stat-label">Growth Stage</div>
-                                    <div class="stat-value" id="modal-growth-stage">Vegetative</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-label">Health Status</div>
-                                    <div class="stat-value" id="modal-health-status">Good</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-label">Days in System</div>
-                                    <div class="stat-value" id="modal-days">14</div>
-                                </div>
-                            </div>
-                            
-                            <div class="plant-health-issues" id="modal-health-issues">
-                                <h4>Health Issues</h4>
-                                <ul id="issues-list">
-                                    <li class="no-issues">No issues detected</li>
-                                </ul>
-                            </div>
-                            
-                            <div class="plant-actions">
-                                <button id="update-plant-photo" class="action-button">
-                                    <i class="fas fa-camera"></i> Update Photo
-                                </button>
-                                <button id="edit-plant-info" class="action-button">
-                                    <i class="fas fa-edit"></i> Edit Info
-                                </button>
+                            <div class="stat-item">
+                                <div class="stat-label">Growing Crop</div>
+                                <div class="stat-value" id="modal-growing-crop">N/A</div>
                             </div>
                         </div>
+                        
+                        <!-- Existing Plant Health Section -->
+                        <div class="plant-stats">
+                            <h4>Plant Health</h4>
+                            <div class="stat-item">
+                                <div class="stat-label">Growth Stage</div>
+                                <div class="stat-value" id="modal-growth-stage">Vegetative</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Health Status</div>
+                                <div class="stat-value" id="modal-health-status">Good</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Days in System</div>
+                                <div class="stat-value" id="modal-days">14</div>
+                            </div>
+                        </div>
+                        
+                        <div class="plant-health-issues" id="modal-health-issues">
+                            <h4>Health Issues</h4>
+                            <ul id="issues-list">
+                                <li class="no-issues">No issues detected</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="plant-actions">
+                            <button id="update-plant-photo" class="action-button">
+                                <i class="fas fa-camera"></i> Update Photo
+                            </button>
+                            <button id="edit-plant-info" class="action-button">
+                                <i class="fas fa-edit"></i> Edit Info
+                            </button>
+                        </div>
                     </div>
+                </div>
                 </section>
                 
                 <!-- Recommendations Tab -->
