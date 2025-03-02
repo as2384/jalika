@@ -12,21 +12,25 @@ const BASE_PATH = getBasePath();
 
 // Files to cache for offline use
 const filesToCache = [
-  BASE_PATH + '/',
-  BASE_PATH + '/index.html',
-  BASE_PATH + '/css/styles.css',
-  BASE_PATH + '/js/app.js',
-  BASE_PATH + '/js/data.js', 
-  BASE_PATH + '/js/image-processor.js',
-  BASE_PATH + '/manifest.json',
-  BASE_PATH + '/img/icons/icon-192x192.png',
-  BASE_PATH + '/img/icons/icon-512x512.png',
-  BASE_PATH + '/img/plants/placeholder.svg',
-  BASE_PATH + '/data/catchphrases.json',
-  BASE_PATH + '/fonts/Excalifont-Regular.woff2',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-solid-900.woff2'
-];
+    BASE_PATH + '/',
+    BASE_PATH + '/index.html',
+    BASE_PATH + '/css/styles.css',
+    BASE_PATH + '/js/app.js',
+    BASE_PATH + '/js/data.js',
+    BASE_PATH + '/js/config.js',
+    BASE_PATH + '/js/db-service.js', 
+    BASE_PATH + '/js/image-processor.js',
+    BASE_PATH + '/js/charts.js',
+    BASE_PATH + '/manifest.json',
+    BASE_PATH + '/img/icons/icon-192x192.png',
+    BASE_PATH + '/img/icons/icon-512x512.png',
+    BASE_PATH + '/img/plants/placeholder.svg',
+    BASE_PATH + '/data/catchphrases.json',
+    BASE_PATH + '/fonts/Excalifont-Regular.woff2',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-solid-900.woff2',
+    'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js'
+  ];
 
 // Install event - cache assets
 self.addEventListener('install', event => {

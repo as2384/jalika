@@ -140,7 +140,8 @@
     // Function to update the handleDataUpdate in app.js
     // This ensures the dashboard displays the latest measurements
 
-    // Replace your handleDataUpdate function with this:
+    // Function to update the handleDataUpdate in app.js
+    // This ensures the dashboard displays the latest measurements
     function handleDataUpdate() {
         console.log('[Jalika] Data updated, refreshing UI...');
         
@@ -171,6 +172,14 @@
             // Update UI components with the latest values
             updateSensorDisplay();
             renderPlantPods();
+            
+            // Load saved images from IndexedDB and apply them to plants
+            loadSavedImages().then(() => {
+                console.log('[Jalika] Saved images loaded and applied to plants');
+                // Re-render plant pods after loading images
+                renderPlantPods();
+            });
+            
             renderActionLists();
             updateLastUpdatedTime();
             
@@ -581,12 +590,30 @@
                 // Update the original image
                 plant.image = imageUrl;
                 
+                // Save the original image to IndexedDB
+                JalikaDB.savePlantImage(podId, imageUrl, false)
+                    .then(() => {
+                        console.log('[Jalika] Original image saved to database for pod', podId);
+                    })
+                    .catch(error => {
+                        console.error('[Jalika] Error saving original image to database:', error);
+                    });
+                
                 // Process the image to create a cartoon version
                 ImageProcessor.createThematicCartoonFromImage(imageUrl)
                     .then(cartoonizedImageUrl => {
                         // Update the cartoon image
                         plant.cartoonImage = cartoonizedImageUrl;
                         elements.modalPlantCartoon.src = cartoonizedImageUrl;
+                        
+                        // Save the cartoon image to IndexedDB
+                        JalikaDB.savePlantImage(podId, cartoonizedImageUrl, true)
+                            .then(() => {
+                                console.log('[Jalika] Cartoon image saved to database for pod', podId);
+                            })
+                            .catch(error => {
+                                console.error('[Jalika] Error saving cartoon image to database:', error);
+                            });
                         
                         // Refresh the plant pods display
                         renderPlantPods();
@@ -602,6 +629,15 @@
                         // Fallback to original image if processing fails
                         plant.cartoonImage = imageUrl;
                         elements.modalPlantCartoon.src = imageUrl;
+                        
+                        // Save the fallback image to IndexedDB as cartoon
+                        JalikaDB.savePlantImage(podId, imageUrl, true)
+                            .then(() => {
+                                console.log('[Jalika] Fallback cartoon image saved to database for pod', podId);
+                            })
+                            .catch(error => {
+                                console.error('[Jalika] Error saving fallback cartoon image to database:', error);
+                            });
                         
                         // Hide processing indicator
                         hideProcessingIndicator();
@@ -726,6 +762,65 @@
                 
                 // Reset button
                 elements.refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            });
+    }
+
+    // Load saved images from IndexedDB and apply them to plants
+    function loadSavedImages() {
+        console.log('[Jalika] Loading saved images from database...');
+        
+        // Check if JalikaDB is available
+        if (!JalikaDB) {
+            console.warn('[Jalika] JalikaDB not available, cannot load saved images');
+            return Promise.resolve();
+        }
+        
+        return JalikaDB.getAllPlantImages()
+            .then(images => {
+                if (!images || images.length === 0) {
+                    console.log('[Jalika] No saved images found in database');
+                    return;
+                }
+                
+                console.log(`[Jalika] Found ${images.length} saved images in database`);
+                
+                // Group images by pod ID
+                const imagesByPod = {};
+                
+                images.forEach(image => {
+                    if (!imagesByPod[image.podId]) {
+                        imagesByPod[image.podId] = {};
+                    }
+                    imagesByPod[image.podId][image.type] = image.data;
+                });
+                
+                // Apply images to plants
+                Object.keys(imagesByPod).forEach(podId => {
+                    const podIdNum = parseInt(podId);
+                    const plant = app.plants.find(p => p.podNumber === podIdNum);
+                    
+                    if (plant) {
+                        console.log(`[Jalika] Applying saved images to plant in pod ${podId}`);
+                        
+                        // Apply original image if available
+                        if (imagesByPod[podId].original) {
+                            plant.image = imagesByPod[podId].original;
+                        }
+                        
+                        // Apply cartoon image if available
+                        if (imagesByPod[podId].cartoon) {
+                            plant.cartoonImage = imagesByPod[podId].cartoon;
+                        }
+                    } else {
+                        console.warn(`[Jalika] No plant found for pod ${podId}`);
+                    }
+                });
+                
+                // Refresh plant pods to show the loaded images
+                renderPlantPods();
+            })
+            .catch(error => {
+                console.error('[Jalika] Error loading saved images:', error);
             });
     }
     
