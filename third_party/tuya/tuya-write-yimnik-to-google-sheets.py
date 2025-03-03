@@ -14,12 +14,12 @@ def allowed_gai_family():
 urllib3_cn.allowed_gai_family = allowed_gai_family
 
 # Tuya API credentials
-ACCESS_ID = "t7m9dpex7tecqx9a38pk"
-ACCESS_KEY = "54b400fbea0c4568b4430342efb7fdc1"
+ACCESS_ID = "<>"
+ACCESS_KEY = "<>"
 API_ENDPOINT = "https://openapi.tuyaus.com"
-DEVICE_ID = "eb119cd481c62af46ek0uj"
+DEVICE_ID = "<>"
 
-WEATHER_API_KEY = "974a4e43e5b8c941b81cbf448ab130e2"  # Sign up for free at OpenWeatherMap
+WEATHER_API_KEY = "<>"  # Sign up for free at OpenWeatherMap
 
 # Google Sheets setup
 SCOPE = ['https://spreadsheets.google.com/feeds',

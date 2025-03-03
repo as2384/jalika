@@ -18,7 +18,6 @@ DEVICE_ID = os.environ.get("TUYA_DEVICE_ID")
 
 # Weather API configuration
 WEATHER_API_KEY = os.environ.get("WEATHER_API_KEY")
-# WEATHER_API_KEY = "974a4e43e5b8c941b81cbf448ab130e2"  # Sign up for free at OpenWeatherMap
 
 # Google Sheets setup
 SCOPE = ['https://spreadsheets.google.com/feeds',
