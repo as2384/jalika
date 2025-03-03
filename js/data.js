@@ -411,7 +411,7 @@ const JalikaData = (function() {
             console.log('[Jalika] Available column names:', Object.keys(rawData[0]).join(', '));
         }
         
-        return rawData.map((row, index) => {
+        return rawData.slice(0, 18).map((row, index) => {
             // Create a case-insensitive way to find fields regardless of exact capitalization/spacing
             const findField = (possibleNames) => {
                 for (const name of possibleNames) {
