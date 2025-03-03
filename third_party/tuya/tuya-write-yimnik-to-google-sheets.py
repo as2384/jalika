@@ -1,5 +1,6 @@
 import datetime
 import gspread
+import os
 import requests
 import socket
 import time
@@ -19,7 +20,7 @@ ACCESS_KEY = "<>"
 API_ENDPOINT = "https://openapi.tuyaus.com"
 DEVICE_ID = "<>"
 
-WEATHER_API_KEY = "<>"  # Sign up for free at OpenWeatherMap
+WEATHER_API_KEY = "974a4e43e5b8c941b81cbf448ab130e2"  # Sign up for free at OpenWeatherMap
 
 # Google Sheets setup
 SCOPE = ['https://spreadsheets.google.com/feeds',
@@ -114,7 +115,7 @@ def get_sensor_data():
 def append_to_google_sheets(data, weather_data):
     """Append data to Google Sheets"""
     try:
-        # Set up credentials
+        # Get credentials from environment variable
         creds = ServiceAccountCredentials.from_json_keyfile_name(credentials_json, SCOPE)
         client = gspread.authorize(creds)
         
@@ -122,11 +123,11 @@ def append_to_google_sheets(data, weather_data):
         spreadsheet = client.open(SPREADSHEET_NAME)
         worksheet = spreadsheet.worksheet(MEASUREMENT_SHEET_NAME)
         
-        # Format data as a row
+        # Format data as a row, but convert date and time to proper formats
         row = [
-            data["date"],
-            data["time"],
-            data["ph"],
+            data["date"],  # Google Sheets will handle this as MM/DD/YYYY
+            data["time"],  # Keep time as string
+            data["ph"],    # All numeric values won't have apostrophes
             data["tds_ppm"],
             data["ec_us_cm"],
             data["temp_c"],
@@ -137,13 +138,21 @@ def append_to_google_sheets(data, weather_data):
             row.append(weather_data["temp_f"])
             row.append(weather_data["condition"])
         else:
-            row.append("")  # Empty column for air temperature
-            row.append("")  # Empty column for weather condition
+            row.append("")
+            row.append("")
         
         row.append("")  # Empty column for checkbox
         
-        # Append row to the bottom of the sheet
-        worksheet.append_row(row)
+        # Instead of using append_row, use insert_row to add values as the appropriate types
+        # First get the next available row
+        next_row = len(worksheet.get_all_values()) + 1
+        
+        # Create a range for the cells to update
+        cell_range = f"A{next_row}:I{next_row}"
+        
+        # Update the cells with the proper value types
+        worksheet.update(values=[row], range_name=cell_range, value_input_option='USER_ENTERED')
+
         print(f"Data added successfully: {row}")
         return True
     

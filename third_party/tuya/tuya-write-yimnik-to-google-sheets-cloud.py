@@ -151,8 +151,16 @@ def append_to_google_sheets(data, weather_data):
         
         row.append("")  # Empty column for checkbox
         
-        # Append row to the bottom of the sheet
-        worksheet.append_row(row)
+         # Instead of using append_row, use insert_row to add values as the appropriate types
+        # First get the next available row
+        next_row = len(worksheet.get_all_values()) + 1
+        
+        # Create a range for the cells to update
+        cell_range = f"A{next_row}:I{next_row}"
+        
+        # Update the cells with the proper value types
+        worksheet.update(values=[row], range_name=cell_range, value_input_option='USER_ENTERED')
+
         print(f"Data added successfully: {row}")
         return True
     
