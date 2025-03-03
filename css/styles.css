@@ -1056,3 +1056,8 @@ body {
         height: 200px;
     }
 }
+
+.description-icon {
+width: 900px;
+height: auto;
+}
