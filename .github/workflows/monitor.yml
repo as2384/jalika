@@ -27,6 +27,7 @@ jobs:
           TUYA_ACCESS_ID: ${{ secrets.TUYA_ACCESS_ID }}
           TUYA_ACCESS_KEY: ${{ secrets.TUYA_ACCESS_KEY }}
           TUYA_DEVICE_ID: ${{ secrets.TUYA_DEVICE_ID }}
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
           SPREADSHEET_NAME: ${{ secrets.SPREADSHEET_NAME }}
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: python third_party/tuya/tuya-write-yimnik-to-google-sheets-cloud.py
