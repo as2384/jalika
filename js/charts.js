@@ -105,7 +105,7 @@ const JalikaCharts = (function() {
                     'ph': 'pH Level',
                     'tds': 'TDS (ppm)',
                     'ec': 'EC (µS/cm)',
-                    'temp': 'Temperature (°F)'
+                    'temp': 'Water Temperature (°F)'
                 };
                 
                 chartTypes.forEach(type => {
