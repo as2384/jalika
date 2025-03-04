@@ -723,7 +723,7 @@ const JalikaCharts = (function() {
                 scales: {
                     y: {
                         min: Math.min(config.optimalRanges.ec.min * 0.9, Math.min(...data) * 0.9),
-                        max: Math.max(config.optimalRanges.ec.max * 1.1, Math.max(...data) * 1.1),
+                        max: Math.round(Math.max(config.optimalRanges.ec.max * 1.1, Math.max(...data) * 1.1)),
                         title: {
                             display: true,
                             text: 'EC (µS/cm)',
