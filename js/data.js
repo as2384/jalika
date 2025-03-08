@@ -25,7 +25,7 @@ const JalikaData = (function() {
     
     // Japanese-inspired cute plant names
     const plantNameGenerator = {
-        prefixes: ['Mochi', 'Kawa', 'Hana', 'Chibi', 'Suki', 'Miki', 'Tomo', 'Yume', 'Aki', 'Haru'],
+        prefixes: ['Karna', 'Arabalika', 'Yudhishthira', 'Bhima', 'Ararajuna', 'Nakula', 'Bharata', 'Vidhura', 'Bhishma', 'Karna'],
         suffixes: ['chan', 'kun', 'san', 'chi', 'pyon', 'maru', 'tan', 'bo', 'nyan', 'pi'],
         
         // Generate a random cute name
