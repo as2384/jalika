@@ -13,6 +13,9 @@
     --secondary-color: #9575CD; /* Soft purple - Wisteria */
     --secondary-dark: #65499C;
     --secondary-light: #B39DDB;
+    --tertiary-color: #FFC067; /* Soft orange - Creamsicle */
+    --tertiary-dark: #FF964F;
+    --tertiary-light: #FEDD9E;
     --text-color: #333333;
     --text-light: #757575;
     --background-color: #F8F8F2; /* Slightly off-white */
@@ -1060,4 +1063,105 @@ body {
 .description-icon {
 width: 900px;
 height: auto;
+}
+
+/* Enhanced Sensor Cards */
+.sensor-card {
+    background-color: white;
+    border-radius: 12px !important; /* Less round, more square */
+    padding: 16px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+    border: none !important;
+}
+
+.sensor-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Color themes for sensor cards based on the screenshots */
+.sensor-card:nth-child(1) {
+    background-color: #B1D892; /* Light green for pH */
+}
+
+.sensor-card:nth-child(2) {
+    background-color: #B39DDB; /* Light purple for TDS */
+}
+
+.sensor-card:nth-child(3) {
+    background-color: #FEDD9E; /* Light orange/yellow for EC */
+}
+
+.sensor-card:nth-child(4) {
+    background-color: #FFC067; /* Orange for Temperature */
+}
+
+/* Status Indicator */
+.status-indicator {
+    position: absolute;
+    bottom: 45px; /* Moved up to prevent covering text */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    z-index: 1; /* Ensure it's above other content */
+}
+
+/* Override any existing styling on the status indicator */
+.status-indicator img {
+    width: 32px;
+    height: 32px;
+    transform: scale(1.2); /* Make the icon bigger and wider */
+    border-radius: 50% !important; /* Make the image circular */
+    background-color: transparent !important;
+    object-fit: cover; /* Ensure the image covers the area */
+}
+
+/* Create colored backgrounds for the status indicators */
+.success-bg {
+    background-color: #E6F4D7 !important; /* Light pastel green */
+    border: 2px solid #9CCC65;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.fair-bg {
+    background-color: #FFF8E1 !important; /* Light pastel yellow */
+    border: 2px solid #FFD54F;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.poor-bg {
+    background-color: #FFEBEE !important; /* Light pastel red */
+    border: 2px solid #EF5350;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.status-indicator img {
+    width: 32px;
+    height: 32px;
+    transform: scale(1.2); /* Make the icon bigger and wider */
+}
+
+/* Sensor value emphasis */
+.sensor-value {
+    font-size: 36px !important;
+    font-weight: bold !important;
+    margin: 10px 0 !important;
+}
+
+/* Make room for the sensor range text */
+.sensor-range {
+    font-size: 14px !important;
+    opacity: 0.8 !important;
+    margin-top: 45px !important; /* Add space for the icon above */
+    position: relative;
+    z-index: 2;
 }

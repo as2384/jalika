@@ -1,0 +1,44 @@
+/* Plant Image Display Enhancement */
+
+/* Enhanced styling for the plant cartoon container */
+.plant-cartoon-container {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto 16px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Improve the image display */
+.plant-cartoon-container img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    max-height: 250px;
+    transition: transform 0.3s ease;
+}
+
+/* Add hover effect */
+.plant-cartoon-container:hover img {
+    transform: scale(1.02);
+}
+
+/* Remove gray background and borders from plant modal image */
+.plant-cartoon-container {
+    background-color: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.plant-cartoon-container img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 300px !important;
+    object-fit: contain !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}

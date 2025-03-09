@@ -32,7 +32,8 @@ const JalikaData = (function() {
         generate() {
             const prefix = this.prefixes[Math.floor(Math.random() * this.prefixes.length)];
             const suffix = this.suffixes[Math.floor(Math.random() * this.suffixes.length)];
-            return `${prefix}-${suffix}`;
+            // return `${prefix}-${suffix}`;
+            return `${prefix}`;
         }
     };
     

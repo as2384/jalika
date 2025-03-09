@@ -47,6 +47,21 @@
       "src": "img/icons/icon-512x512.png",
       "type": "image/png",
       "sizes": "512x512"
+    },
+    {
+      "src": "img/icons/icon-success.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "img/icons/icon-fair.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "img/icons/icon-poor.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ],
   "screenshots": [

@@ -827,3 +827,163 @@
     // Initialize the app when the DOM is fully loaded
     document.addEventListener('DOMContentLoaded', init);
 })();
+
+// Jalika Enhancement Script - Focusing on Sensor Cards
+(function() {
+    'use strict';
+    
+    // Base path for loading images
+    function getBasePath() {
+        const path = location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
+        return path === '/' ? '' : path; // If root path, use empty string
+    }
+    
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('[Jalika] UI enhancements loading...');
+        
+        // Apply initial enhancements
+        enhanceSensorCards();
+        
+        // Set up event listeners for dynamic updates
+        setupEventListeners();
+    });
+    
+    // Set up event listeners
+    function setupEventListeners() {
+        // Listen for data updates to refresh UI
+        document.addEventListener('jalika:dataUpdated', function() {
+            console.log('[Jalika] Data updated, refreshing UI enhancements...');
+            setTimeout(enhanceSensorCards, 100);
+        });
+    }
+    
+    // Enhance the sensor cards with status indicators
+    function enhanceSensorCards() {
+        console.log('[Jalika] Enhancing sensor cards...');
+        
+        // Add status indicators to all sensor cards
+        const sensorCards = document.querySelectorAll('.sensor-card');
+        if (!sensorCards.length) {
+            console.warn('[Jalika] No sensor cards found');
+            return;
+        }
+        
+        // Types of sensors
+        const sensorTypes = ['ph', 'tds', 'ec', 'temp'];
+        
+        // Add status indicators to each card
+        sensorCards.forEach((card, index) => {
+            if (index < sensorTypes.length) {
+                addStatusIndicator(card, sensorTypes[index]);
+            }
+        });
+    }
+    
+    // Add a status indicator to a sensor card
+    function addStatusIndicator(cardElement, sensorType) {
+        if (!cardElement) return;
+        
+        // Remove existing indicator if any
+        const existingIndicator = cardElement.querySelector('.status-indicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
+        }
+        
+        // Get sensor value
+        const valueElement = cardElement.querySelector('.sensor-value');
+        if (!valueElement) {
+            console.warn(`[Jalika] No value element found for ${sensorType}`);
+            return;
+        }
+        
+        const value = parseFloat(valueElement.textContent);
+        if (isNaN(value)) {
+            console.warn(`[Jalika] Invalid value for ${sensorType}: ${valueElement.textContent}`);
+            return;
+        }
+        
+        // Determine status based on value
+        let statusClass = 'success'; // Default status
+        let bgClass = 'success-bg';  // Default background class
+        
+        // Try to use JalikaConfig if available
+        if (window.JalikaConfig && typeof JalikaConfig.getValueStatusClass === 'function') {
+            const configStatus = JalikaConfig.getValueStatusClass(value, sensorType);
+            if (configStatus === 'warning') {
+                statusClass = 'fair';
+                bgClass = 'fair-bg';
+            } else if (configStatus === 'danger') {
+                statusClass = 'poor';
+                bgClass = 'poor-bg';
+            }
+        } else {
+            // Fallback logic if JalikaConfig isn't available
+            console.warn('[Jalika] JalikaConfig not available, using fallback logic');
+            
+            // Simple fallback ranges
+            const fallbackRanges = {
+                ph: { min: 5.5, max: 6.5 },
+                tds: { min: 700, max: 1200 },
+                ec: { min: 1000, max: 2200 },
+                temp: { min: 60, max: 75 }
+            };
+            
+            if (fallbackRanges[sensorType]) {
+                const range = fallbackRanges[sensorType];
+                if (value < range.min || value > range.max) {
+                    // How far outside the range?
+                    const rangeSize = range.max - range.min;
+                    const deviation = value < range.min 
+                        ? (range.min - value) / rangeSize 
+                        : (value - range.max) / rangeSize;
+                    
+                    if (deviation > 0.2) {
+                        statusClass = 'poor';
+                        bgClass = 'poor-bg';
+                    } else {
+                        statusClass = 'fair';
+                        bgClass = 'fair-bg';
+                    }
+                }
+            }
+        }
+        
+        // Get base path for images
+        const basePath = getBasePath();
+        
+        // Determine the image path
+        const imagePath = `${basePath}img/icons/icon-${statusClass}.png`;
+        
+        // Create outer div for background color with stronger styling
+        const outerDiv = document.createElement('div');
+        outerDiv.className = `status-indicator ${bgClass}`;
+        outerDiv.style.backgroundColor = bgClass === 'success-bg' 
+            ? '#E6F4D7' 
+            : (bgClass === 'fair-bg' ? '#FFF8E1' : '#FFEBEE');
+        
+        // Create image element
+        const imgElement = document.createElement('img');
+        imgElement.src = imagePath;
+        imgElement.alt = `${statusClass} status`;
+        imgElement.style.backgroundColor = 'transparent';
+        imgElement.style.borderRadius = '50%'; // Make image circular
+        imgElement.style.overflow = 'hidden'; // Ensure content doesn't overflow the border radius
+        
+        // Add image to outer div
+        outerDiv.appendChild(imgElement);
+        
+        // Add to card
+        cardElement.appendChild(outerDiv);
+        
+        console.log(`[Jalika] Added ${statusClass} indicator with ${bgClass} background to ${sensorType} card`);
+    }
+    
+    // Call handler immediately
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', enhanceSensorCards);
+    } else {
+        enhanceSensorCards();
+    }
+    
+})();
