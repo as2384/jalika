@@ -181,3 +181,88 @@
         setupPhotoUpdateHandler();
     }
 })();
+
+// Add this to jalika-enhancements.js to ensure the chart containers are properly structured
+
+// Fix chart container structure with 2x2 layout
+function fixChartContainers() {
+    // Wait for charts to be rendered
+    setTimeout(function() {
+        console.log('[Jalika] Fixing chart containers...');
+        
+        // Get the chart container
+        const chartsContainer = document.getElementById('sensor-charts-container');
+        if (!chartsContainer) {
+            console.log('[Jalika] No chart container found to fix');
+            return;
+        }
+        
+        // Get all chart wrappers
+        const chartWrappers = chartsContainer.querySelectorAll('.chart-wrapper');
+        if (!chartWrappers.length) {
+            console.log('[Jalika] No chart wrappers found to fix');
+            return;
+        }
+        
+        // Apply additional stabilizing attributes
+        chartWrappers.forEach(wrapper => {
+            // Ensure canvas has proper style
+            const canvas = wrapper.querySelector('canvas');
+            if (canvas) {
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                canvas.style.position = 'absolute';
+                canvas.style.top = '0';
+                canvas.style.left = '0';
+                
+                // Important - ensure parent wrapper has position relative
+                wrapper.style.position = 'relative';
+                wrapper.style.height = '280px'; // Increased height
+                wrapper.style.overflow = 'visible'; // Changed to visible
+                wrapper.style.paddingTop = '10px'; // Added padding
+                
+                console.log('[Jalika] Fixed chart wrapper and canvas styles');
+            }
+        });
+        
+        // Ensure the container itself has proper structure - 2x2 layout
+        chartsContainer.style.display = 'grid';
+        chartsContainer.style.gridTemplateColumns = 'repeat(2, 1fr)'; // Force 2 columns
+        chartsContainer.style.gap = '20px';
+        chartsContainer.style.width = '100%';
+        
+        // Adjust Chart.js options to prevent cut-off
+        if (window.Chart && Chart.instances) {
+            Object.values(Chart.instances).forEach(chart => {
+                // Add padding to top of chart
+                if (chart.options && chart.options.scales && chart.options.scales.y) {
+                    chart.options.scales.y.ticks = chart.options.scales.y.ticks || {};
+                    chart.options.scales.y.ticks.padding = 10;
+                    
+                    // Also increase top padding in the layout
+                    chart.options.layout = chart.options.layout || {};
+                    chart.options.layout.padding = chart.options.layout.padding || {};
+                    chart.options.layout.padding.top = 20;
+                }
+                
+                // Update the chart
+                chart.update();
+            });
+        }
+        
+        console.log('[Jalika] Chart containers fixed with 2x2 layout!');
+    }, 500); // Wait for charts to render
+}
+
+// Listen for data updates which trigger chart rendering
+document.addEventListener('jalika:dataUpdated', function() {
+    console.log('[Jalika] Data updated, fixing charts after render...');
+    // Fix charts after a delay to ensure they're rendered
+    setTimeout(fixChartContainers, 300);
+});
+
+// Run once on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[Jalika] Page loaded, fixing charts...');
+    fixChartContainers();
+});

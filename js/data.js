@@ -39,16 +39,16 @@ const JalikaData = (function() {
     
     // Default catchphrases - will be expanded
     const defaultCatchphrases = [
-        "I'm growing so happily today!",
-        "Water me, senpai!",
-        "Feeling leafy and loving it!",
-        "Photosynthesis is my superpower!",
-        "Growing stronger every day!",
-        "Reaching for the sun with all my might!",
-        "I'm rooting for you!",
-        "Leaf me alone, I'm blooming!",
-        "I'm having a grape day!",
-        "Just chilling and growing!"
+        "Lettuce celebrate growth together!",
+        "Leaf by leaf, I grow stronger!",
+        "Romaine calm and carry on growing!",
+        "I eat to live and live to be eaten!",
+        "Ah just a bwaby!",
+        "Aaaah do declare!!",
+        "I like to be tucked in at night and sleep on a coco coir pillow..",
+        "Karna is my best friend!",
+        "Arabalika and I played with our blocks the other day..",
+        "Ararararajoona's name is hard. I say too many Arararas.."
     ];
     
     // Create and display warning message
