@@ -1136,3 +1136,197 @@ height: auto;
     position: relative;
     z-index: 2;
 }
+
+/* Plant Image Display Enhancement */
+
+/* Enhanced styling for the plant cartoon container */
+.plant-cartoon-container {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto 16px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Improve the image display */
+.plant-cartoon-container img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    max-height: 250px;
+    transition: transform 0.3s ease;
+}
+
+/* Add hover effect */
+.plant-cartoon-container:hover img {
+    transform: scale(1.02);
+}
+
+/* Remove gray background and borders from plant modal image */
+.plant-cartoon-container {
+    background-color: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.plant-cartoon-container img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 300px !important;
+    object-fit: contain !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Soft pastel green background for the main app area */
+body {
+    background-color: #ccfeb8 !important; /* Very light pastel green */
+}
+
+/* Update content area background to be transparent to show the pastel green background */
+.content-area {
+    background-color: transparent !important;
+}
+
+/* Make the tab panels have a white background for better contrast */
+.tab-panel {
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Keep the tab navigation with a clean background */
+.tab-navigation {
+    background-color: rgba(255, 255, 255, 0.7);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+/* Ensure app container uses the full background color */
+.app-container {
+    background-color: transparent;
+}
+
+/* Chart Container Stability Fix with 2x2 Layout */
+.chart-wrapper {
+    width: 100% !important;
+    height: 280px !important; /* Increased height to prevent cut-off */
+    position: relative !important;
+    overflow: visible !important; /* Changed from hidden to visible */
+    margin-bottom: 20px !important;
+    background-color: white !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    padding-top: 10px !important; /* Added padding to give more space at top */
+}
+
+/* Ensure the chart canvas stays properly sized */
+.chart-wrapper canvas {
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+}
+
+/* Chart container for all charts - fixed 2x2 grid */
+.charts-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important; /* Force 2 columns */
+    gap: 20px !important;
+    margin-top: 20px !important;
+    width: 100% !important;
+}
+
+/* Ensure the graph container itself is solid */
+.graph-container {
+    background-color: white !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+    margin-bottom: 30px !important;
+}
+
+.graph {
+    width: 100% !important;
+    min-height: 600px !important; /* Increased to accommodate all charts */
+    position: relative !important;
+    overflow: visible !important; /* Changed from hidden to visible */
+}
+
+/* Make chart title fixed height to prevent layout shifts */
+.chart-title {
+    height: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-bottom: 10px !important;
+    font-weight: bold !important;
+    position: relative !important;
+    z-index: 10 !important; /* Ensure title stays on top */
+}
+
+/* Custom Plant Grid Layout */
+.plant-pods {
+    display: grid !important;
+    grid-template-columns: repeat(18, 1fr) !important; /* 18 column grid for flexibility */
+    gap: var(--spacing-md) !important;
+    width: 100% !important;
+}
+
+/* First row: Plants 1-4 (4 plants) */
+.plant-pod:nth-child(1),
+.plant-pod:nth-child(2),
+.plant-pod:nth-child(3),
+.plant-pod:nth-child(4) {
+    grid-column: auto / span 4 !important; /* Each spans 4 of 18 columns (18/4 = 4.5, rounded to 4) */
+}
+
+/* Second row: Plants 5-9 (5 plants) */
+.plant-pod:nth-child(5),
+.plant-pod:nth-child(6),
+.plant-pod:nth-child(7),
+.plant-pod:nth-child(8),
+.plant-pod:nth-child(9) {
+    grid-column: auto / span 3 !important; /* Each spans 3 of 18 columns (18/5 = 3.6, rounded to 3) */
+}
+
+/* Third row: Plants 10-13 (4 plants) */
+.plant-pod:nth-child(10),
+.plant-pod:nth-child(11),
+.plant-pod:nth-child(12),
+.plant-pod:nth-child(13) {
+    grid-column: auto / span 4 !important; /* Each spans 4 of 18 columns (18/4 = 4.5, rounded to 4) */
+}
+
+/* Fourth row: Plants 14-18 (5 plants) */
+.plant-pod:nth-child(14),
+.plant-pod:nth-child(15),
+.plant-pod:nth-child(16),
+.plant-pod:nth-child(17),
+.plant-pod:nth-child(18) {
+    grid-column: auto / span 3 !important; /* Each spans 3 of 18 columns (18/5 = 3.6, rounded to 3) */
+}
+
+/* Optional: Improve the plant pod appearance */
+.plant-pod {
+    background-color: white !important;
+    border-radius: var(--border-radius-md) !important;
+    padding: var(--spacing-md) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    position: relative !important;
+}
+
+.plant-pod:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
