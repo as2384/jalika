@@ -242,7 +242,7 @@ button:focus {
 .tab-button {
     flex: 1;
     padding: var(--spacing-md);
-    background-color: rgb(255, 193, 78);
+    background-color: rgb(247, 151, 95);
     /* color: var(--text-light); */
     color: white;
     border-radius: 0;
