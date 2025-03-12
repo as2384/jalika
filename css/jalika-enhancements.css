@@ -23,6 +23,8 @@
     justify-content: flex-start;
     margin-bottom: 20px;
     gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 .jalika-button {
@@ -44,6 +46,28 @@
 
 .jalika-button i {
     margin-right: 8px;
+}
+
+/* Weeks selector */
+.jalika-weeks-selector {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+.jalika-weeks-selector label {
+    margin-right: 8px;
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+.jalika-weeks-selector select {
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+    background-color: white;
+    cursor: pointer;
 }
 
 /* Cleanup button */
@@ -93,10 +117,58 @@
     font-weight: bold;
 }
 
+/* Week Sections */
+.jalika-week-section {
+    margin-bottom: 30px;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #fdfdfd;
+}
+
+.jalika-week-header {
+    background-color: #f5f5f5;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.jalika-week-header h3 {
+    font-size: 18px;
+    margin: 0;
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.jalika-week-date {
+    margin-left: 12px;
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+.jalika-week-photo-count {
+    margin-left: auto;
+    font-size: 14px;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* No weekly photos message */
+.jalika-no-weekly-photos {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    text-align: center;
+    color: var(--text-light);
+    margin-top: 16px;
+}
+
 .jalika-photo-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 16px;
+    padding: 16px;
 }
 
 .jalika-photo-item {
@@ -106,11 +178,31 @@
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     background-color: #f8f8f8;
+    position: relative;
 }
 
 .jalika-photo-item:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Photo day badge */
+.jalika-photo-day-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 2;
 }
 
 /* Highlight duplicates */
@@ -120,7 +212,7 @@
 
 .jalika-photo-item img {
     width: 100%;
-    height: 140px;
+    height: 120px;
     object-fit: cover;
     display: block;
 }
@@ -243,24 +335,44 @@
     color: var(--text-color);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .jalika-photo-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    }
-    
-    .jalika-photo-item img {
-        height: 120px;
-    }
+@keyframes jalika-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-@media (max-width: 480px) {
+/* Responsive adjustments */
+@media (max-width: 768px) {
     .jalika-photo-grid {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
     
     .jalika-photo-item img {
         height: 100px;
+    }
+    
+    .jalika-week-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .jalika-week-date {
+        margin-left: 0;
+        margin-top: 4px;
+    }
+    
+    .jalika-week-photo-count {
+        margin-left: 0;
+        margin-top: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .jalika-photo-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    
+    .jalika-photo-item img {
+        height: 90px;
     }
     
     .jalika-photo-modal-content {
@@ -275,6 +387,12 @@
     
     .jalika-album-controls {
         flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .jalika-weeks-selector {
+        margin-left: 0;
+        margin-top: 10px;
     }
 }
 
@@ -322,4 +440,14 @@
     padding: 10px 16px !important;
     border-radius: 6px !important;
     font-size: 14px !important;
+}
+
+/* Empty week message */
+.jalika-empty-week {
+    text-align: center;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    color: var(--text-light);
+    font-style: italic;
 }

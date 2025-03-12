@@ -8,7 +8,8 @@ const JalikaPhotoAlbum = (function() {
     const config = {
         dbName: 'jalika_photos_db',
         dbVersion: 1,
-        storeName: 'photos'
+        storeName: 'photos',
+        weeksToShow: 12 // Default number of weeks to display
     };
     
     // Database handle
@@ -95,7 +96,7 @@ const JalikaPhotoAlbum = (function() {
         
         // Add heading and controls
         albumContainer.innerHTML = `
-            <h2>Plant Photos Album</h2>
+            <h2>Plant Photos By Week</h2>
             <div class="jalika-album-controls">
                 <button id="import-photos-button" class="jalika-button">
                     <i class="fas fa-file-import"></i> Import Photos
@@ -103,6 +104,17 @@ const JalikaPhotoAlbum = (function() {
                 <button id="cleanup-photos-button" class="jalika-button jalika-cleanup-button">
                     <i class="fas fa-broom"></i> Remove Duplicates
                 </button>
+                <div class="jalika-weeks-selector">
+                    <label for="weeks-to-show">Weeks to show:</label>
+                    <select id="weeks-to-show">
+                        <option value="4">4 weeks</option>
+                        <option value="8">8 weeks</option>
+                        <option value="12" selected>12 weeks</option>
+                        <option value="16">16 weeks</option>
+                        <option value="24">24 weeks</option>
+                        <option value="52">52 weeks</option>
+                    </select>
+                </div>
             </div>
             <div class="album-content">
                 <div class="empty-album">
@@ -139,6 +151,15 @@ const JalikaPhotoAlbum = (function() {
                             alert("Error removing duplicates: " + error.message);
                         });
                 }
+            });
+        }
+        
+        // Add weeks selector event listener
+        const weeksSelector = document.getElementById('weeks-to-show');
+        if (weeksSelector) {
+            weeksSelector.addEventListener('change', function() {
+                config.weeksToShow = parseInt(this.value);
+                loadAndDisplayPhotos();
             });
         }
         
@@ -431,27 +452,91 @@ const JalikaPhotoAlbum = (function() {
         });
     }
     
+    // Categorize photos by week
+    function categorizePhotosByWeek(photos) {
+        // First, ensure all photos have a usable date
+        const photosWithDates = photos.map(photo => {
+            let usableDate;
+            if (photo.date) {
+                usableDate = new Date(photo.date);
+            } else {
+                usableDate = new Date(photo.importDate);
+            }
+            
+            // Make sure date is valid
+            if (isNaN(usableDate.getTime())) {
+                usableDate = new Date(photo.importDate);
+            }
+            
+            return {
+                ...photo,
+                usableDate: usableDate
+            };
+        });
+        
+        // Sort photos by date (oldest first)
+        photosWithDates.sort((a, b) => a.usableDate - b.usableDate);
+        
+        // If no photos, return empty array
+        if (photosWithDates.length === 0) {
+            return [];
+        }
+        
+        // Get the earliest date
+        const earliestDate = new Date(photosWithDates[0].usableDate);
+        
+        // Initialize weeks array
+        const weeks = [];
+        
+        for (let i = 0; i < config.weeksToShow; i++) {
+            // Calculate start and end of week
+            const weekStartDate = new Date(earliestDate);
+            weekStartDate.setDate(weekStartDate.getDate() + (i * 7));
+            
+            const weekEndDate = new Date(weekStartDate);
+            weekEndDate.setDate(weekEndDate.getDate() + 6);
+            
+            // Filter photos for this week
+            const photosInWeek = photosWithDates.filter(photo => {
+                return photo.usableDate >= weekStartDate && photo.usableDate <= weekEndDate;
+            });
+            
+            // Add week to array if it has photos
+            if (photosInWeek.length > 0) {
+                weeks.push({
+                    weekNumber: i + 1,
+                    startDate: weekStartDate,
+                    endDate: weekEndDate,
+                    photos: photosInWeek
+                });
+            }
+        }
+        
+        return weeks;
+    }
+    
     // Load and display photos from database
     function loadAndDisplayPhotos() {
         getAllPhotos()
             .then(photos => {
                 console.log(`[JalikaPhotoAlbum] Loaded ${photos.length} photos from database`);
-                displayPhotos(photos);
+                const photosByWeek = categorizePhotosByWeek(photos);
+                displayPhotosByWeek(photosByWeek, photos.length);
             })
             .catch(error => {
                 console.error('[JalikaPhotoAlbum] Error loading photos:', error);
             });
     }
     
-    // Display photos in the UI
-    function displayPhotos(photos) {
+    // Display photos categorized by week
+    function displayPhotosByWeek(weeks, totalPhotoCount) {
         const albumContent = document.querySelector('.album-content');
         if (!albumContent) {
             console.error('[JalikaPhotoAlbum] Album content element not found');
             return;
         }
         
-        if (!photos || photos.length === 0) {
+        if (totalPhotoCount === 0) {
             // Show empty state
             albumContent.innerHTML = `
                 <div class="empty-album">
@@ -463,54 +548,60 @@ const JalikaPhotoAlbum = (function() {
             return;
         }
         
-        // Count photos by name
-        const photosByName = {};
-        photos.forEach(photo => {
-            if (!photosByName[photo.name]) {
-                photosByName[photo.name] = 1;
-            } else {
-                photosByName[photo.name]++;
-            }
-        });
-        
-        // Check for duplicates
-        const hasDuplicates = Object.values(photosByName).some(count => count > 1);
-        
-        // Display photo count and warning if duplicates exist
+        // Display photo count
         let html = `
             <div class="jalika-photos-header">
-                <span class="jalika-photo-count">${photos.length} photos in library</span>
-                ${hasDuplicates ? 
-                    '<span class="jalika-duplicate-warning">Duplicates detected! Click "Remove Duplicates" to fix.</span>' : 
-                    ''}
+                <span class="jalika-photo-count">${totalPhotoCount} photos in library</span>
             </div>
-            <div class="jalika-photo-grid">
         `;
         
-        // Sort by date (newest first)
-        const sortedPhotos = [...photos].sort((a, b) => {
-            if (!a.date) return 1;
-            if (!b.date) return -1;
-            return new Date(b.date) - new Date(a.date);
-        });
+        // If no grouped photos, show message
+        if (weeks.length === 0) {
+            html += `
+                <div class="jalika-no-weekly-photos">
+                    <p>Photos imported but couldn't be organized by week. They may be missing dates or all fall outside the selected week range.</p>
+                </div>
+            `;
+            albumContent.innerHTML = html;
+            return;
+        }
         
-        // Add photo items
-        sortedPhotos.forEach(photo => {
-            const dateText = photo.date ? formatDateForDisplay(photo.date) : 'No date available';
-            const isDuplicate = photosByName[photo.name] > 1;
+        // Add each week
+        weeks.forEach(week => {
+            const formattedStartDate = formatDateForDisplay(week.startDate, true);
+            const formattedEndDate = formatDateForDisplay(week.endDate, true);
             
             html += `
-                <div class="jalika-photo-item ${isDuplicate ? 'jalika-duplicate' : ''}">
-                    <img src="${photo.url}" alt="${photo.name}">
-                    <div class="jalika-photo-info">
-                        <div class="jalika-photo-name">${photo.name}</div>
-                        <div class="jalika-photo-date ${photo.date ? 'jalika-date-found' : ''}">${dateText}</div>
+                <div class="jalika-week-section">
+                    <div class="jalika-week-header">
+                        <h3>Week ${week.weekNumber}</h3>
+                        <span class="jalika-week-date">${formattedStartDate} - ${formattedEndDate}</span>
+                        <span class="jalika-week-photo-count">${week.photos.length} photos</span>
+                    </div>
+                    <div class="jalika-photo-grid">
+            `;
+            
+            // Add photos for this week
+            week.photos.forEach(photo => {
+                const dateText = formatDateForDisplay(photo.usableDate);
+                
+                html += `
+                    <div class="jalika-photo-item" data-photo-id="${photo.id}">
+                        <div class="jalika-photo-day-badge">${photo.usableDate.getDate()}</div>
+                        <img src="${photo.url}" alt="${photo.name}">
+                        <div class="jalika-photo-info">
+                            <div class="jalika-photo-name">${photo.name}</div>
+                            <div class="jalika-photo-date">${dateText}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
                     </div>
                 </div>
             `;
         });
-        
-        html += '</div>';
         
         // Update content
         albumContent.innerHTML = html;
@@ -518,28 +609,46 @@ const JalikaPhotoAlbum = (function() {
         // Add click handlers for photo details
         document.querySelectorAll('.jalika-photo-item').forEach(item => {
             item.addEventListener('click', function() {
-                const photoName = this.querySelector('.jalika-photo-name').textContent;
-                const photo = photos.find(p => p.name === photoName);
-                if (photo) {
-                    showPhotoDetail(photo);
+                const photoId = this.getAttribute('data-photo-id');
+                
+                // Find the photo in the weeks data
+                let clickedPhoto = null;
+                for (const week of weeks) {
+                    const found = week.photos.find(p => p.id === photoId);
+                    if (found) {
+                        clickedPhoto = found;
+                        break;
+                    }
+                }
+                
+                if (clickedPhoto) {
+                    showPhotoDetail(clickedPhoto);
                 }
             });
         });
     }
     
     // Format date for display
-    function formatDateForDisplay(dateString) {
-        if (!dateString) return 'No date available';
+    function formatDateForDisplay(dateObj, shortFormat = false) {
+        if (!dateObj) return 'No date available';
         
         try {
-            const date = new Date(dateString);
-            return date.toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            if (shortFormat) {
+                // Short format for week headers (e.g., Mar 1)
+                return dateObj.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric'
+                });
+            } else {
+                // Full format for photo details
+                return dateObj.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
         } catch (e) {
             return 'Invalid date format';
         }
@@ -555,8 +664,15 @@ const JalikaPhotoAlbum = (function() {
             document.body.appendChild(modal);
         }
         
-        const dateText = photo.date ? formatDateForDisplay(photo.date) : 'No date available';
-        const importDateText = formatDateForDisplay(photo.importDate);
+        const dateText = formatDateForDisplay(photo.usableDate);
+        const importDateText = formatDateForDisplay(new Date(photo.importDate));
+        
+        // Calculate week number
+        const weekNumber = Math.floor(
+            (photo.usableDate - new Date(photo.usableDate).setDate(
+                new Date(photo.usableDate).getDate() - new Date(photo.usableDate).getDay()
+            )) / (7 * 24 * 60 * 60 * 1000)
+        ) + 1;
         
         modal.innerHTML = `
             <div class="jalika-photo-modal-content">
@@ -566,7 +682,8 @@ const JalikaPhotoAlbum = (function() {
                 </div>
                 <div class="jalika-photo-modal-info">
                     <h3>${photo.name}</h3>
-                    <p><strong>Date Captured:</strong> <span class="${photo.date ? 'jalika-date-found' : ''}">${dateText}</span></p>
+                    <p><strong>Week:</strong> Week ${weekNumber}</p>
+                    <p><strong>Date Captured:</strong> ${dateText}</p>
                     <p><strong>Imported:</strong> ${importDateText}</p>
                 </div>
             </div>
